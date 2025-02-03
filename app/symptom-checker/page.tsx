@@ -7,7 +7,7 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: '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',
+  apiKey: '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',
   dangerouslyAllowBrowser: true, // Explicitly enable browser usage,
   defaultHeaders: {
     "HTTP-Referer": "http://localhost:3000", // Replace with your production URL
