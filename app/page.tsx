@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="space-y-12">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-ds-primary">Welcome to CuraEasE</h1>
+        <h1 className="text-4xl font-bold text-ds-primary">Welcome to CuraEase</h1>
         <p className="text-xl text-ds-text/80">
           Your intelligent healthcare companion
         </p>

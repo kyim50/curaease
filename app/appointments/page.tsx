@@ -1,8 +1,41 @@
-// app/appointments/page.tsx
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Calendar } from '../components/ui/calendar';
-import { addHours, isWithinInterval } from 'date-fns';
+import { addHours } from 'date-fns';
+
+interface Doctor {
+  id: string;
+  fullName: string;
+  specialty: string;
+}
+
+const doctors: Doctor[] = [
+  {
+    id: "1",
+    fullName: "Dr. Davis",
+    specialty: "Paediatrician"
+  },
+  {
+    id: "2",
+    fullName: "Dr. Jane",
+    specialty: "General Physician"
+  },
+  {
+    id: "3",
+    fullName: "Dr. Brown",
+    specialty: "Surgeon"
+  },
+  {
+    id: "4",
+    fullName: "Dr. Walker",
+    specialty: "Gastroenterologist"
+  },
+  {
+    id: "5",
+    fullName: "Dr. Brown",
+    specialty: "Dermatologist"
+  }
+];
 
 interface Appointment {
   id: string;
@@ -16,23 +49,6 @@ export default function Appointments() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-
-  // Mock availability (replace with API call)
-  const doctorAvailability = [
-    { start: addHours(new Date(), 2), end: addHours(new Date(), 3) },
-    { start: addHours(new Date(), 5), end: addHours(new Date(), 6) }
-  ];
-
-  const handleBook = (time: Date) => {
-    const newAppointment: Appointment = {
-      id: Math.random().toString(),
-      doctor: "Dr. Smith",
-      patient: "John Doe",
-      start: time,
-      end: addHours(time, 1)
-    };
-    setAppointments([...appointments, newAppointment]);
-  };
 
   const handleCancel = (id: string) => {
     setAppointments(appointments.filter(a => a.id !== id));
@@ -50,19 +66,6 @@ export default function Appointments() {
             onSelect={setSelectedDate}
             className="rounded-md border"
           />
-          
-          <div className="mt-6 space-y-2">
-            <h3 className="text-xl font-semibold text-ds-primary">Available Slots</h3>
-            {doctorAvailability.map((slot, i) => (
-              <button
-                key={i}
-                onClick={() => handleBook(slot.start)}
-                className="w-full p-2 text-left bg-ds-dark hover:bg-ds-primary/10 rounded border border-ds-primary/20"
-              >
-                {slot.start.toLocaleTimeString()} - {slot.end.toLocaleTimeString()}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="bg-ds-dark/50 p-6 rounded-lg border border-ds-primary/20">
