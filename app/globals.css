@@ -3,10 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --background: #111827;
+  --background: #E5EBEA;
   --foreground: #ffffff;
 }
+/* 
+COlORS:
+Night ("black"): 0C090D
+Anti Flash White ("white"): E5EBEA
+Jade : 00A676
+Cornell Red: B3001B
 
+*/
 body {
   color: var(--foreground);
   background: var(--background);
