@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Calendar } from '../components/ui/calendar'; // Import the Calendar component
-import { addHours } from 'date-fns';
+import { addHours, setHours, setMinutes, isWithinInterval, areIntervalsOverlapping } from 'date-fns';
 
 interface Doctor {
   id: string;
@@ -10,31 +10,11 @@ interface Doctor {
 }
 
 const doctors: Doctor[] = [
-  {
-    id: "1",
-    fullName: "Dr. Davis",
-    specialty: "Paediatrician"
-  },
-  {
-    id: "2",
-    fullName: "Dr. Jane",
-    specialty: "General Physician"
-  },
-  {
-    id: "3",
-    fullName: "Dr. Brown",
-    specialty: "Surgeon"
-  },
-  {
-    id: "4",
-    fullName: "Dr. Walker",
-    specialty: "Gastroenterologist"
-  },
-  {
-    id: "5",
-    fullName: "Dr. Brown",
-    specialty: "Dermatologist"
-  }
+  { id: "1", fullName: "Dr. Davis", specialty: "Paediatrician" },
+  { id: "2", fullName: "Dr. Jane", specialty: "General Physician" },
+  { id: "3", fullName: "Dr. Brown", specialty: "Surgeon" },
+  { id: "4", fullName: "Dr. Walker", specialty: "Gastroenterologist" },
+  { id: "5", fullName: "Dr. Brown", specialty: "Dermatologist" }
 ];
 
 interface Appointment {
@@ -43,47 +23,79 @@ interface Appointment {
   patient: string;
   start: Date;
   end: Date;
+  type: 'Consultation' | 'Checkup' | 'Specialization';
 }
+
+const appointmentDurations = {
+  Consultation: 1,
+  Checkup: 2,
+  Specialization: 3
+};
 
 export default function Appointments() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedAppointmentType, setSelectedAppointmentType] = useState<'Consultation' | 'Checkup' | 'Specialization'>('Consultation');
 
-  // Handle canceling appointments
   const handleCancel = (id: string) => {
     setAppointments(appointments.filter(a => a.id !== id));
   };
 
-  // Available and booked days setup
-  const availableDays: Date[] = [new Date()]; // Example: today is available
-  const bookedAppointments: Date[] = appointments.map(app => app.start); // Use actual booked appointments
+  const getDoctorAppointments = (doctorId: string, date: Date): Appointment[] => {
+    return appointments.filter(app => app.doctor === doctorId && app.start.toDateString() === date.toDateString());
+  };
 
-  // Handle booking appointments
+  const findAvailableSlot = (doctorId: string, date: Date, duration: number): Date | null => {
+    const doctorAppointments = getDoctorAppointments(doctorId, date);
+    let startTime = setMinutes(setHours(date, 9), 0); // Start at 9 AM
+    const endTime = setMinutes(setHours(date, 17), 0); // End at 5 PM
+
+    while (startTime < endTime) {
+      const endSlot = addHours(startTime, duration);
+      const slotIsAvailable = !doctorAppointments.some(app => 
+        areIntervalsOverlapping(
+          { start: app.start, end: app.end },
+          { start: startTime, end: endSlot }
+        )
+      );
+
+      if (slotIsAvailable) {
+        return startTime;
+      }
+
+      startTime = addHours(startTime, 1); // Move to the next hour
+    }
+
+    return null; // No available slot found
+  };
+
   const handleBookAppointment = () => {
-    if (!selectedDate || !selectedTime || !selectedDoctorId) {
-      alert("Please select a date, time, and doctor for the appointment.");
+    if (!selectedDate || !selectedDoctorId) {
+      alert("Please select a date and a doctor for the appointment.");
       return;
     }
 
-    const selectedDateTime = new Date(selectedDate);
-    const [hours, minutes] = selectedTime.split(':').map(Number);
-    selectedDateTime.setHours(hours, minutes);
+    const duration = appointmentDurations[selectedAppointmentType];
+    const availableSlot = findAvailableSlot(selectedDoctorId, selectedDate, duration);
+
+    if (!availableSlot) {
+      alert("No available slots for the selected date and doctor.");
+      return;
+    }
 
     const newAppointment: Appointment = {
       id: `${appointments.length + 1}`,
       doctor: selectedDoctorId,
-      patient: "Patient Name", // You would replace this with actual patient data
-      start: selectedDateTime,
-      end: addHours(selectedDateTime, 1), // Assuming 1-hour appointments for now
+      patient: "Patient Name", // Replace with actual patient data
+      start: availableSlot,
+      end: addHours(availableSlot, duration),
+      type: selectedAppointmentType
     };
 
     setAppointments([...appointments, newAppointment]);
   };
 
-  // Get doctor's name by ID
   const getDoctorNameById = (doctorId: string) => {
     const doctor = doctors.find(d => d.id === doctorId);
     return doctor ? doctor.fullName : "Unknown Doctor";
@@ -96,9 +108,9 @@ export default function Appointments() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-ds-dark/50 p-6 rounded-lg border border-ds-primary/20">
           <Calendar
-            availableDays={availableDays}
-            bookedAppointments={bookedAppointments}
-            onDaySelect={setSelectedDate} // Pass the selected date to the parent component
+            availableDays={[new Date()]} // Example: today is available
+            bookedAppointments={appointments.map(app => app.start)}
+            onDaySelect={setSelectedDate}
           />
         </div>
 
@@ -142,14 +154,17 @@ export default function Appointments() {
         </div>
 
         <div className="mt-4">
-          <label htmlFor="time-select" className="block text-ds-primary mb-2">Select Appointment Time:</label>
-          <input
-            type="time"
-            id="time-select"
-            className="block w-full p-2 border border-ds-primary rounded text-gray-800"  // Ensuring text color is visible
-            value={selectedTime}
-            onChange={(e) => setSelectedTime(e.target.value)}
-          />
+          <label htmlFor="appointment-type-select" className="block text-ds-primary mb-2">Select Appointment Type:</label>
+          <select
+            id="appointment-type-select"
+            className="block w-full p-2 border border-ds-primary rounded text-gray-800"
+            value={selectedAppointmentType}
+            onChange={(e) => setSelectedAppointmentType(e.target.value as 'Consultation' | 'Checkup' | 'Specialization')}
+          >
+            <option value="Consultation">Consultation (1 hour)</option>
+            <option value="Checkup">Checkup (2 hours)</option>
+            <option value="Specialization">Specialization (3 hours)</option>
+          </select>
         </div>
 
         <div className="mt-4">
