@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from 'react';
+import Nav from '../components/nav';
 
 interface Medication {
   name: string;
@@ -21,6 +22,8 @@ export default function MedicationSchedule() {
   };
 
   return (
+    <div> 
+      <Nav /> {/* Add the Nav component */}
     <div className="max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Medication Management</h1>
       
@@ -76,5 +79,6 @@ export default function MedicationSchedule() {
         ))}
       </div>
     </div>
+  </div>
   );
 }

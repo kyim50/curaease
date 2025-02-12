@@ -20,6 +20,7 @@ import {
   MoreHorizontal,
   Mic
 } from 'lucide-react';
+import Nav from '../components/nav';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -271,6 +272,8 @@ export default function SymptomChecker() {
   ];
 
   return (
+    <div>
+      <Nav /> {/* Add the Nav component here */}
     <div className="flex h-screen bg-gray-900">
       {/* Sidebar */}
       <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-[#202123] overflow-hidden`}>
@@ -480,6 +483,7 @@ export default function SymptomChecker() {
           </div>
         </div>
       </div> */}
+    </div>
     </div>
   );
 }

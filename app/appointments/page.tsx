@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Calendar } from '../components/ui/calendar'; // Import the Calendar component
 import { addHours, setHours, setMinutes, isWithinInterval, areIntervalsOverlapping } from 'date-fns';
+import Nav from '../components/nav';
 
 interface Doctor {
   id: string;
@@ -102,10 +103,13 @@ export default function Appointments() {
   };
 
   return (
+    <div>
+    <Nav /> {/* Add the Nav component here */}
     <div className="space-y-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold text-ds-primary">Appointment Management</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* ... (rest of the appointments page code) */}
         <div className="bg-ds-dark/50 p-6 rounded-lg border border-ds-primary/20">
           <Calendar
             availableDays={[new Date()]} // Example: today is available
@@ -176,6 +180,7 @@ export default function Appointments() {
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }
