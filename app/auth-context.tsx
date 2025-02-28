@@ -24,28 +24,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    console.log("Auth state initialization started");
     // Set persistence to LOCAL to keep the user logged in
-    setPersistence(auth, browserLocalPersistence).then(() => {
-      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setLoading(false);
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log("Persistence set to LOCAL");
         
-        // Create a session cookie for middleware authentication check
-        if (currentUser) {
-          // Setting a cookie to track authentication state
-          document.cookie = `__session=1; path=/;`;
-        } else {
-          // Clear cookie when logged out
-          document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-        }
-      });
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          console.log("Auth state changed:", currentUser ? "User logged in" : "No user");
+          setUser(currentUser);
+          setLoading(false);
+          
+          // Create a session cookie for middleware authentication check
+          if (currentUser) {
+            console.log("Setting session cookie");
+            document.cookie = `__session=1; path=/; max-age=2592000;`; // 30 days expiry
+          } else {
+            console.log("Clearing session cookie");
+            document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+          }
+        });
 
-      return () => unsubscribe();
-    });
+        return () => unsubscribe();
+      })
+      .catch(error => {
+        console.error("Error setting persistence:", error);
+        setLoading(false);
+      });
   }, []);
 
   const signOut = async () => {
     try {
+      console.log("Signing out");
       await firebaseSignOut(auth);
       // Clear the session cookie
       document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;

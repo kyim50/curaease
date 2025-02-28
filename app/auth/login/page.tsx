@@ -18,6 +18,7 @@ export default function Login() {
   // If user is already logged in, redirect to dashboard
   useEffect(() => {
     if (user) {
+      console.log("User is logged in, redirecting to dashboard");
       router.push("/dashboard");
     }
   }, [user, router]);
@@ -28,11 +29,13 @@ export default function Login() {
     setLoading(true);
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // The auth state change listener in auth-context will handle the redirection
-      // we don't need to manually redirect here
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("Login successful:", userCredential.user.uid);
+      
+      // Immediately redirect after successful login rather than waiting for auth state change
+      router.push("/dashboard");
     } catch (error: any) {
-      console.error(error);
+      console.error("Login error:", error);
       setError(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
@@ -45,10 +48,13 @@ export default function Login() {
     
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      // The auth state change listener in auth-context will handle the redirection
+      const result = await signInWithPopup(auth, provider);
+      console.log("Google login successful:", result.user.uid);
+      
+      // Immediately redirect after successful login
+      router.push("/dashboard");
     } catch (error: any) {
-      console.error(error);
+      console.error("Google login error:", error);
       setError(error.message || "Failed to sign in with Google");
     } finally {
       setLoading(false);
@@ -121,6 +127,8 @@ export default function Login() {
             </button>
           </form>
           
+
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">

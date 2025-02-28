@@ -10,9 +10,11 @@ export function middleware(request: NextRequest) {
   const isPublicPath = 
     path === '/' || 
     path.startsWith('/auth/') || 
-    path === '/about' || 
-    path === '/features' ||
-    path === '/contact';
+    path === '/dashboard' || 
+    path === '/appointments' ||
+    path === '/symptom-checker' ||
+    path === '/health-info' ||
+    path === '/medications';
   
   // Get the authentication token from cookies
   const token = request.cookies.get('authToken')?.value;
