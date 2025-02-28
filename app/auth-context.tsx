@@ -3,7 +3,9 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { 
   User, 
   onAuthStateChanged, 
-  signOut as firebaseSignOut
+  signOut as firebaseSignOut,
+  setPersistence,
+  browserLocalPersistence
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { useRouter } from "next/navigation";
@@ -22,17 +24,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
+    // Set persistence to LOCAL to keep the user logged in
+    setPersistence(auth, browserLocalPersistence).then(() => {
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setLoading(false);
+        
+        // Create a session cookie for middleware authentication check
+        if (currentUser) {
+          // Setting a cookie to track authentication state
+          document.cookie = `__session=1; path=/;`;
+        } else {
+          // Clear cookie when logged out
+          document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        }
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    });
   }, []);
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
-    router.push("/");
+    try {
+      await firebaseSignOut(auth);
+      // Clear the session cookie
+      document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      router.push("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (

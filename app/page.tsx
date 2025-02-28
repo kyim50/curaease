@@ -1,65 +1,31 @@
-// app/page.tsx
+"use client";
 import Link from "next/link";
+import { LandingNav } from "./components/LandingNav";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div>
-      <div className="space-y-12 p-6">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-[#00A676]">Welcome to CuraEase</h1>
-          <p className="text-xl text-[#00A676]">
-            Your intelligent healthcare companion
+    <div className="min-h-screen flex flex-col">
+      <LandingNav />
+      
+      <main className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-white to-gray-100">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+            Welcome to <span className="text-[#00A676]">CuraEase</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            The smart healthcare management platform that simplifies your medical journey.
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link
-            href="/appointments"
-            className="bg-[#00A676] border border-ds-primary/20 rounded-lg p-6 hover:border-ds-primary transition-all hover:scale-[1.02]"
-          >
-            <h3 className="text-xl font-semibold text-white mb-2">Appointments</h3>
-            <p className="text-ds-text/80">Schedule and manage your medical appointments</p>
-          </Link>
-
-          <Link
-            href="/symptom-checker"
-            className="bg-[#00A676] border border-ds-primary/20 rounded-lg p-6 hover:border-ds-primary transition-all hover:scale-[1.02]"
-          >
-            <h3 className="text-xl font-semibold text-white mb-2">Symptom Checker</h3>
-            <p className="text-ds-text/80">Get preliminary assessment of your symptoms</p>
-          </Link>
-
-          <Link
-            href="/health-info"
-            className="bg-[#00A676] border border-ds-primary/20 rounded-lg p-6 hover:border-ds-primary transition-all hover:scale-[1.02]"
-          >
-            <h3 className="text-xl font-semibold text-white mb-2">Health Info</h3>
-            <p className="text-ds-text/80">Access trusted medical information</p>
-          </Link>
-
-          <Link
-            href="/medications"
-            className="bg-[#00A676] border border-ds-primary/20 rounded-lg p-6 hover:border-ds-primary transition-all hover:scale-[1.02]"
-          >
-            <h3 className="text-xl font-semibold text-white mb-2">Medications</h3>
-            <p className="text-ds-text/80">Manage your medication schedule</p>
-          </Link>
-        </div>
-
-        <div className="bg-[#00A676] border border-ds-primary/20 rounded-lg p-6 mt-8">
-          <h2 className="text-2xl font-semibold text-white mb-4">Recent Activity</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-ds-dark/50 rounded">
-              <span className="text-ds-text/80">Upcoming appointment</span>
-              <span className="text-white">Tomorrow 10:00 AM</span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-ds-dark/50 rounded">
-              <span className="text-ds-text/80">Medication due</span>
-              <span className="text-white">In 2 hours</span>
-            </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/auth/signup" className="px-8 py-3 bg-[#00A676] text-white font-medium rounded-md hover:bg-[#008c63] transition-colors">
+              Get Started
+            </Link>
+            <Link href="/auth/login" className="px-8 py-3 border border-[#00A676] text-[#00A676] font-medium rounded-md hover:bg-[#f0fdf9] transition-colors">
+              Log In
+            </Link>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

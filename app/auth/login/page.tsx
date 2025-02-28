@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { LandingNav } from "@/app/components/LandingNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/app/firebase";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/auth-context";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,14 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
+  
+  // If user is already logged in, redirect to dashboard
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user, router]);
   
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +29,8 @@ export default function Login() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard"); // Redirect to dashboard after successful login
+      // The auth state change listener in auth-context will handle the redirection
+      // we don't need to manually redirect here
     } catch (error: any) {
       console.error(error);
       setError(error.message || "Failed to sign in");
@@ -36,7 +46,7 @@ export default function Login() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      router.push("/dashboard"); // Redirect to dashboard after successful login
+      // The auth state change listener in auth-context will handle the redirection
     } catch (error: any) {
       console.error(error);
       setError(error.message || "Failed to sign in with Google");
