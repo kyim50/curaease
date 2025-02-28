@@ -1,25 +1,23 @@
-import './globals.css'
-import { Inter } from 'next/font/google'
-import { Toaster } from 'react-hot-toast'
+// app/layout.tsx
+import { AuthProvider } from "./auth-context";
+import "./globals.css";
+import type { Metadata } from "next";
 
-const inter = Inter({ subsets: ['latin'] })
-
-export const metadata = {
-  title: 'Medical Symptom Checker',
-  description: 'AI-powered medical symptom analysis',
-}
+export const metadata: Metadata = {
+  title: "CuraEase",
+  description: "Healthcare management made easy"
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Toaster position="top-right" />
-        {children}
+      <body>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
-  )
+  );
 }
