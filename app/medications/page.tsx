@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Fuse from 'fuse.js';
+// Import Fuse with its proper types
+import Fuse from 'fuse.js'; // You need to run: npm install --save fuse.js
 import Nav from '../components/nav';
 
 interface Medication {
@@ -18,10 +19,17 @@ interface Medication {
   ingredients?: string[]; // Optional
 }
 
+// Define interface for the search result item
+interface SearchResult {
+  name: string;
+  rxcui: string;
+  [key: string]: any; // Allow for additional properties
+}
+
 export default function MedicationSchedule() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [newMed, setNewMed] = useState<Medication>({ name: '', dosage: '', time: '', frequency: 'daily' });
-  const [searchResults, setSearchResults] = useState<any[]>([]); // Store search results from API
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]); // Updated type
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]); // Store autocomplete suggestions
   const [searchError, setSearchError] = useState<string | null>(null); // Store search error messages
@@ -134,16 +142,21 @@ export default function MedicationSchedule() {
 
   // Fuzzy search for medication names
   useEffect(() => {
-    if (newMed.name.trim()) {
-      const fuse = new Fuse(searchResults, {
+    if (newMed.name.trim() && searchResults.length > 0) {
+      // Create a properly typed Fuse instance with generic type
+      const fuse = new Fuse<SearchResult>(searchResults, {
         keys: ['name'],
         threshold: 0.3, // Adjust threshold for fuzzy search (lower = stricter)
         ignoreLocation: true, // Search across the entire string
         includeMatches: true, // Include match details
         findAllMatches: true, // Find all matches
       });
+      
+      // Use the built-in Fuse types by letting TypeScript infer them
       const results = fuse.search(newMed.name);
-      setSearchResults(results.map((result) => result.item));
+      // Extract .item from each result
+      const matchedItems = results.map(result => result.item);
+      setSearchResults(matchedItems);
 
       // Autocorrect: If there's a close match, update the input field
       if (results.length > 0 && results[0]?.score !== undefined && results[0].score < 0.4) {
