@@ -15,13 +15,15 @@ export default function Login() {
   const router = useRouter();
   const { user } = useAuth();
   
-  // If user is already logged in, redirect to dashboard
+
+ /* If user is already logged in, redirect to dashboard
   useEffect(() => {
     if (user) {
       console.log("User is logged in, redirecting to dashboard");
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [user, router]);*/
+  
   
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,7 +8,7 @@ import {
   browserLocalPersistence
 } from "firebase/auth";
 import { auth } from "./firebase";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 type AuthContextType = {
   user: User | null;
@@ -22,44 +22,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    console.log("Auth state initialization started");
-    // Set persistence to LOCAL to keep the user logged in
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        console.log("Persistence set to LOCAL");
-        
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-          console.log("Auth state changed:", currentUser ? "User logged in" : "No user");
-          setUser(currentUser);
-          setLoading(false);
-          
-          // Create a session cookie for middleware authentication check
-          if (currentUser) {
-            console.log("Setting session cookie");
-            document.cookie = `__session=1; path=/; max-age=2592000;`; // 30 days expiry
-          } else {
-            console.log("Clearing session cookie");
-            document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-          }
-        });
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
 
-        return () => unsubscribe();
-      })
-      .catch(error => {
-        console.error("Error setting persistence:", error);
-        setLoading(false);
-      });
-  }, []);
+      // Redirect logic with more strict conditions
+      if (currentUser) {
+        // If user is on login or signup page and authenticated, redirect to dashboard
+        if (pathname === '/auth/login' || pathname === '/auth/signup') {
+          router.push('/dashboard');
+        }
+      } else {
+        // If user is not authenticated and tries to access protected routes, redirect to login
+        if (pathname === '/dashboard') {
+          router.push('/auth/login');
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [pathname, router]);
 
   const signOut = async () => {
     try {
-      console.log("Signing out");
       await firebaseSignOut(auth);
-      // Clear the session cookie
-      document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      router.push("/");
+      router.push("/auth/login");
     } catch (error) {
       console.error("Error signing out:", error);
     }
