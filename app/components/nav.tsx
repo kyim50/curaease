@@ -5,7 +5,7 @@ export default function Nav() {
   return (
     <nav className="bg-[#00A676] border-b border-ds-primary/20 p-4">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <Link href="/" className="text-xl font-bold text-white hover:text-white/90 hover:scale-110 transition-transform duration-500">
+        <Link href="/dashboard" className="text-xl font-bold text-white hover:text-white/90 hover:scale-110 transition-transform duration-500">
           CuraEase
         </Link>
         <div className="flex space-x-6">

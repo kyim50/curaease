@@ -20,6 +20,7 @@
     "font-face": "^2.3.4",
     "fuse.js": "^7.1.0",
     "ioredis": "^5.4.2",
+    "lucide-react": "^0.477.0",
     "next": "15.1.6",
     "next-auth": "^4.24.11",
     "openai": "^4.82.0",
