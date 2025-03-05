@@ -37,7 +37,7 @@ interface Conversation {
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: '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',
+  apiKey: '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',
   dangerouslyAllowBrowser: true,
   defaultHeaders: {
     "HTTP-Referer": 'http://localhost:3000',
