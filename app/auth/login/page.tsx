@@ -1,29 +1,21 @@
 "use client";
 import Link from "next/link";
 import { LandingNav } from "@/app/components/LandingNav";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/app/firebase";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-context";
+import { EyeIcon, EyeOffIcon } from "lucide-react"; // Assuming you're using Lucide icons
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
-  
-
- /* If user is already logged in, redirect to dashboard
-  useEffect(() => {
-    if (user) {
-      console.log("User is logged in, redirecting to dashboard");
-      router.push("/dashboard");
-    }
-  }, [user, router]);*/
-  
   
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +30,24 @@ export default function Login() {
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Login error:", error);
-      setError(error.message || "Failed to sign in");
+      
+      // More specific error handling
+      switch (error.code) {
+        case 'auth/invalid-credential':
+          setError("Invalid email or password. Please check and try again.");
+          break;
+        case 'auth/user-not-found':
+          setError("No account found with this email. Please sign up.");
+          break;
+        case 'auth/wrong-password':
+          setError("Incorrect password. Please try again.");
+          break;
+        case 'auth/too-many-requests':
+          setError("Too many login attempts. Please try again later.");
+          break;
+        default:
+          setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -61,6 +70,10 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -93,14 +106,28 @@ export default function Login() {
             
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
-              <input
-                id="password"
-                type="password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00A676] text-black"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00A676] text-black pr-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
             
             <div className="flex items-center justify-between">
@@ -129,8 +156,6 @@ export default function Login() {
             </button>
           </form>
           
-
-
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
