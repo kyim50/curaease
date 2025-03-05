@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -14,11 +13,12 @@ export function middleware(request: NextRequest) {
     path === '/appointments' ||
     path === '/symptom-checker' ||
     path === '/health-info' ||
-    path === '/medications'||
-    path === '/profile';
+    path === '/medications' ||
+    path === '/profile' ||
+    path === '/account-security';
   
   // Get the authentication token from cookies
-  const token = request.cookies.get('authToken')?.value;
+  const token = request.cookies.get('authToken')?.value ?? null;
   
   // If the user is accessing a protected route without authentication, redirect to login
   if (!isPublicPath && !token) {
