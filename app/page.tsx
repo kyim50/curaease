@@ -17,12 +17,14 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup" className="px-8 py-3 bg-[#00A676] text-white font-medium rounded-md hover:bg-[#008c63] transition-colors">
-              Get Started
-            </Link>
-            <Link href="/auth/login" className="px-8 py-3 border border-[#00A676] text-[#00A676] font-medium rounded-md hover:bg-[#f0fdf9] transition-colors">
-              Log In
-            </Link>
+            <div className="flex flex-col space-y-4">
+              <Link href="/auth/signup" className="px-8 py-3 bg-[#00A676] text-white font-medium rounded-md hover:bg-[#008c63] transition-colors">
+                Patients Start Here
+              </Link>
+              <Link href="/auth/doctor-signup" className="px-8 py-3 border border-[#00A676] text-[#00A676] font-medium rounded-md hover:bg-[#f0fdf9] transition-colors">
+                Doctors Sign Up
+              </Link>
+            </div>
           </div>
         </div>
       </main>
