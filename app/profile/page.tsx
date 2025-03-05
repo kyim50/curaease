@@ -1,251 +1,238 @@
 "use client";
-import React, { useState, useRef } from 'react';
-import { 
-  updateProfile, 
-  updateEmail, 
-  updatePassword, 
-  User, 
-  reauthenticateWithCredential, 
-  EmailAuthProvider 
-} from 'firebase/auth';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../auth-context';
+import { updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react'; // Assuming you're using Lucide icons
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc 
+} from 'firebase/firestore';
+import { auth } from '../firebase';
 
 const ProfilePage: React.FC = () => {
-  const router = useRouter();
   const { user } = useAuth();
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [newPassword, setNewPassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(user?.photoURL || null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const router = useRouter();
+  const db = getFirestore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [profileImage, setProfileImage] = useState<string | null>(user?.photoURL || null);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleGoBack = () => {
-    router.push('/dashboard');
-  };
+  // Load profile data from Firestore on component mount
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (!user) return;
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      // Limit image size to 100KB
-      if (file.size > 100 * 1024) {
-        setError('Image must be smaller than 100KB');
-        return;
+      try {
+        const profileDocRef = doc(db, 'users', user.uid);
+        const profileDoc = await getDoc(profileDocRef);
+
+        if (profileDoc.exists()) {
+          const data = profileDoc.data();
+          if (data.profileImageUrl) {
+            setProfileImage(data.profileImageUrl);
+          }
+          if (data.displayName) {
+            setDisplayName(data.displayName);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile data:', error);
       }
+    };
 
-      // Convert image to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
+    loadProfileData();
+  }, [user, db]);
+
+  const compressImage = (base64Str: string, maxWidth = 300, maxHeight = 300): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Compress and return new base64 string
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
-      reader.readAsDataURL(file);
-    }
+    });
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    if (!user) {
-      setError('No user is currently logged in');
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File must be less than 5MB");
       return;
     }
 
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert("Invalid file type. Please upload JPEG, PNG, or GIF.");
+      return;
+    }
+
+    setIsUploading(true);
+
     try {
-      // Update profile
-      await updateProfile(user, {
-        displayName: displayName || undefined,
-        photoURL: profileImage || undefined
-      });
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
 
-      // Update email if changed
-      if (email !== user.email) {
-        // Requires recent authentication
-        if (!currentPassword) {
-          setError('Please provide current password to change email');
-          return;
+        try {
+          // Compress the image
+          const compressedImage = await compressImage(base64String);
+
+          // Store compressed image in Firestore
+          if (!user) throw new Error('No user found');
+
+          const profileDocRef = doc(db, 'users', user.uid);
+          
+          // Update Firestore document with image URL
+          await setDoc(profileDocRef, {
+            profileImageUrl: compressedImage,
+            displayName: displayName,
+            email: user.email
+          }, { merge: true });
+
+          // Update Firebase auth profile with a minimal identifier
+          await updateProfile(user, {
+            photoURL: `profile_${user.uid}`
+          });
+
+          setProfileImage(compressedImage);
+          alert('Profile photo updated successfully');
+        } catch (error) {
+          console.error('Firestore upload error:', error);
+          alert('Failed to upload profile photo');
+        } finally {
+          setIsUploading(false);
         }
-
-        // Re-authenticate user
-        const credential = EmailAuthProvider.credential(
-          user.email!, 
-          currentPassword
-        );
-        await reauthenticateWithCredential(user, credential);
-
-        // Update email
-        await updateEmail(user, email);
-      }
-
-      // Update password if new password is provided
-      if (newPassword) {
-        // Requires recent authentication
-        if (!currentPassword) {
-          setError('Please provide current password to change password');
-          return;
-        }
-
-        // Re-authenticate user
-        const credential = EmailAuthProvider.credential(
-          user.email!, 
-          currentPassword
-        );
-        await reauthenticateWithCredential(user, credential);
-
-        // Update password
-        await updatePassword(user, newPassword);
-      }
-
-      setSuccess('Profile updated successfully');
-      // Reset password fields
-      setCurrentPassword('');
-      setNewPassword('');
-    } catch (err: any) {
-      console.error('Profile update error:', err);
-      setError(err.message || 'Failed to update profile');
+      };
+    } catch (error) {
+      console.error('File reading error:', error);
+      setIsUploading(false);
+      alert('Failed to process image');
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+  const handleUpdateProfile = async () => {
+    try {
+      if (!user) throw new Error('No user found');
+
+      const profileDocRef = doc(db, 'users', user.uid);
+      
+      // Update Firestore document
+      await setDoc(profileDocRef, {
+        displayName: displayName,
+        email: user.email,
+        profileImageUrl: profileImage // Preserve existing image
+      }, { merge: true });
+
+      // Update Firebase auth profile
+      await updateProfile(user, { 
+        displayName: displayName 
+      });
+
+      alert('Profile updated successfully');
+    } catch (error) {
+      console.error('Profile update error:', error);
+      alert('Failed to update profile');
+    }
   };
 
-  if (!user) {
-    return <div>Please log in to view your profile</div>;
-  }
-
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md relative">
-      {/* Back Button */}
-      <button 
-        onClick={handleGoBack}
-        className="absolute top-4 left-4 flex items-center text-gray-600 hover:text-gray-800 transition"
-        aria-label="Go back to dashboard"
-      >
-        <ArrowLeft className="mr-2" /> Back to Dashboard
-      </button>
-
-      <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile</h1>
-      
-      {/* Profile Image Upload */}
-      <div className="mb-4 flex flex-col items-center">
-        <input 
-          type="file" 
-          ref={fileInputRef}
-          onChange={handleImageChange}
-          accept="image/*"
-          className="hidden"
-        />
-        <div 
-          className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer"
-          onClick={triggerFileInput}
-        >
-          {profileImage ? (
-            <img 
-              src={profileImage} 
-              alt="Profile" 
-              className="w-full h-full object-cover"
+    <div className="container mx-auto p-4 max-w-md min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="w-full bg-white shadow-md rounded-lg p-6 border border-gray-200">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Profile</h2>
+        
+        <div className="flex flex-col items-center space-y-6">
+          {/* Profile Photo */}
+          <div className="relative">
+            <div className="w-28 h-28 rounded-full border-4 border-blue-500 overflow-hidden">
+              <img 
+                src={profileImage || '/default-avatar.png'} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              className="hidden" 
+              accept="image/jpeg,image/png,image/gif"
+              onChange={handleImageUpload}
+              disabled={isUploading}
             />
-          ) : (
-            <span className="text-gray-500">Upload Photo</span>
-          )}
+            <button 
+              className="absolute bottom-0 right-0 bg-blue-500 text-white px-3 py-1 rounded-full text-xs shadow-md hover:bg-blue-600 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? 'Uploading...' : 'Change'}
+            </button>
+          </div>
+
+          {/* Display Name */}
+          <div className="w-full space-y-4">
+            <input 
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+              placeholder="Display Name" 
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+            <button 
+              onClick={handleUpdateProfile}
+              className="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition-colors shadow-md"
+            >
+              Update Profile
+            </button>
+          </div>
+
+          {/* User Email */}
+          <div className="w-full">
+            <p className="text-sm text-gray-600 text-center">
+              Email: {user?.email}
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <button 
+            className="w-full bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300 transition-colors"
+            onClick={() => router.push('/dashboard')}
+          >
+            Back to Dashboard
+          </button>
         </div>
-        <button 
-          type="button"
-          onClick={triggerFileInput}
-          className="mt-2 text-blue-600 hover:underline"
-        >
-          Change Photo
-        </button>
       </div>
-
-      <form onSubmit={handleUpdateProfile} className="space-y-4">
-        {/* Display Name */}
-        <div>
-          <label htmlFor="displayName" className="block mb-2">
-            Display Name
-          </label>
-          <input 
-            type="text" 
-            id="displayName"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
-            placeholder="Enter display name"
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label htmlFor="email" className="block mb-2">
-            Email
-          </label>
-          <input 
-            type="email" 
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
-            placeholder="Enter email"
-          />
-        </div>
-
-        {/* Current Password (for authentication) */}
-        <div>
-          <label htmlFor="currentPassword" className="block mb-2">
-            Current Password (required to make changes)
-          </label>
-          <input 
-            type="password" 
-            id="currentPassword"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
-            placeholder="Enter current password"
-          />
-        </div>
-
-        {/* New Password */}
-        <div>
-          <label htmlFor="newPassword" className="block mb-2">
-            New Password (optional)
-          </label>
-          <input 
-            type="password" 
-            id="newPassword"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md"
-            placeholder="Enter new password"
-          />
-        </div>
-
-        {/* Error and Success Messages */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-            {success}
-          </div>
-        )}
-
-        {/* Submit Button */}
-        <button 
-          type="submit" 
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          Update Profile
-        </button>
-      </form>
     </div>
   );
 };

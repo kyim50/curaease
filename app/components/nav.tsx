@@ -1,14 +1,39 @@
 "use client";
 import Link from "next/link";
 import { useAuth } from "@/app/auth-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { logOut } from "@/lib/firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 export default function Nav() {
   const { user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const router = useRouter();
+  const db = getFirestore();
+
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      if (!user) return;
+
+      try {
+        const profileDocRef = doc(db, 'users', user.uid);
+        const profileDoc = await getDoc(profileDocRef);
+
+        if (profileDoc.exists()) {
+          const data = profileDoc.data();
+          if (data.profileImageUrl) {
+            setProfileImage(data.profileImageUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile image:', error);
+      }
+    };
+
+    loadProfileImage();
+  }, [user, db]);
 
   const handleSignOut = async () => {
     try {
@@ -47,11 +72,11 @@ export default function Nav() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center space-x-2 focus:outline-none"
               >
-                {user.photoURL ? (
+                {profileImage ? (
                   <img 
-                    src={user.photoURL} 
+                    src={profileImage} 
                     alt="User Profile" 
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white font-bold">
