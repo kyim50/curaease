@@ -100,7 +100,7 @@ export default function DoctorSignUp() {
         createdAt: new Date()
       });
       
-      router.push("/dashboard"); // Redirect to dashboard after successful signup
+      router.push("/login"); // Redirect to dashboard after successful signup
     } catch (error: any) {
       console.error(error);
       setError(error.message || "Failed to sign up with Google");

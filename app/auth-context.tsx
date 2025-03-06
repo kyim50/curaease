@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (currentUser) {
         // If user is on login or signup page and authenticated, redirect to dashboard
         if (pathname === '/auth/login' || pathname === '/auth/signup') {
-          router.push('/dashboard');
+          router.push('/login');
         }
       } else {
         // If user is not authenticated and tries to access protected routes, redirect to login

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { LandingNav } from "@/app/components/LandingNav";
 import { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from "firebase/auth";
-import { auth } from "@/app/firebase";
+import { auth, firestore } from "@/app/firebase"; // Add db import
+import { doc, setDoc } from "firebase/firestore"; // Import Firestore methods
 import { useRouter } from "next/navigation";
 
 export default function SignUp() {
@@ -37,13 +38,24 @@ export default function SignUp() {
     try {
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
       
       // Update profile with name
-      await updateProfile(userCredential.user, {
+      await updateProfile(user, {
         displayName: `${firstName} ${lastName}`
       });
       
-      router.push("/dashboard"); // Redirect to dashboard after successful signup
+      // Create a user document in Firestore
+      await setDoc(doc(firestore, 'users', user.uid), {
+        uid: user.uid,
+        firstName,
+        lastName,
+        email,
+        role: 'patient',
+        createdAt: new Date()
+      });
+      
+      router.push("/login"); // Redirect to dashboard after successful signup
     } catch (error: any) {
       console.error(error);
       setError(error.message || "Failed to create account");
@@ -63,8 +75,26 @@ export default function SignUp() {
     
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push("/dashboard"); // Redirect to dashboard after successful signup
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Extract name parts from displayName
+      const nameParts = user.displayName?.split(' ') || ['', ''];
+      const gFirstName = nameParts[0] || '';
+      // Join all remaining parts as lastName (handles middle names)
+      const gLastName = nameParts.slice(1).join(' ') || '';
+      
+      // Create a user document in Firestore for Google sign-ins
+      await setDoc(doc(firestore, 'users', user.uid), {
+        uid: user.uid,
+        firstName: gFirstName,
+        lastName: gLastName,
+        email: user.email,
+        role: 'patient',
+        createdAt: new Date()
+      });
+      
+      router.push("/login"); 
     } catch (error: any) {
       console.error(error);
       setError(error.message || "Failed to sign up with Google");
