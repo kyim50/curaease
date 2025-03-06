@@ -54,7 +54,7 @@ export default function DoctorSignUp() {
       });
       
       // Create a doctor-specific document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(db, 'doctors', user.uid), {
         uid: user.uid,
         firstName,
         lastName,
@@ -65,7 +65,7 @@ export default function DoctorSignUp() {
         createdAt: new Date()
       });
       
-      router.push("/dashboard"); // Redirect to dashboard after successful signup
+      router.push("/login"); // Redirect to dashboard after successful signup
     } catch (error: any) {
       console.error(error);
       setError(error.message || "Failed to create doctor account");
