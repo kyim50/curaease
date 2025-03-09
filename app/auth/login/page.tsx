@@ -6,7 +6,9 @@ import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 
 import { auth } from "@/app/firebase";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-context";
-import { EyeIcon, EyeOffIcon } from "lucide-react"; // Assuming you're using Lucide icons
+import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore"; // Import Firestore functions
+import { db } from "@/app/firebase"; // Import db from your firebase config
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,6 +19,19 @@ export default function Login() {
   const router = useRouter();
   const { user } = useAuth();
   
+  // Function to check if user is a doctor
+  const checkIfDoctor = async (uid: string) => {
+    try {
+      const doctorRef = doc(db, "doctors", uid);
+      const doctorSnap = await getDoc(doctorRef);
+      return doctorSnap.exists();
+    } catch (error) {
+      console.error("Error checking doctor status:", error);
+      return false;
+    }
+  };
+  
+  // Modified login handler with doctor check
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -26,8 +41,16 @@ export default function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log("Login successful:", userCredential.user.uid);
       
-      // Immediately redirect after successful login rather than waiting for auth state change
-      router.push("/dashboard");
+      // Check if user is a doctor
+      const isDoctor = await checkIfDoctor(userCredential.user.uid);
+      
+      // Redirect based on doctor status
+      if (isDoctor) {
+        router.push("/doctors-dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+      
     } catch (error: any) {
       console.error("Login error:", error);
       
@@ -53,6 +76,7 @@ export default function Login() {
     }
   };
   
+  // Modified Google login handler with doctor check
   const handleGoogleLogin = async () => {
     setError("");
     setLoading(true);
@@ -62,8 +86,16 @@ export default function Login() {
       const result = await signInWithPopup(auth, provider);
       console.log("Google login successful:", result.user.uid);
       
-      // Immediately redirect after successful login
-      router.push("/dashboard");
+      // Check if user is a doctor
+      const isDoctor = await checkIfDoctor(result.user.uid);
+      
+      // Redirect based on doctor status
+      if (isDoctor) {
+        router.push("/doctors-dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+      
     } catch (error: any) {
       console.error("Google login error:", error);
       setError(error.message || "Failed to sign in with Google");
@@ -196,4 +228,4 @@ export default function Login() {
       </main>
     </div>
   );
-}  
+}
