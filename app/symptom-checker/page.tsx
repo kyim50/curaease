@@ -16,10 +16,14 @@ import {
   Sparkles,
   HelpCircle,
   Settings,
-  Mic
+  Mic,
+  Calendar,
+  X,
+  ArrowLeft,
+  Clock
 } from 'lucide-react';
-import Nav from '../components/nav';
-import { KernelMemoryClient } from './kernel-memory-client'; // We'll create this file next
+import { LandingNav } from '../components/LandingNav';
+import { KernelMemoryClient } from './kernel-memory-client';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -34,10 +38,8 @@ interface Conversation {
   createdAt: number;
 }
 
-// Initialize DeepSeek client
-const DEEPSEEK_API_KEY = 'sk-8b901b9f70cd4582b147e65ae09910ef';
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const OPENROUTER_API_KEY='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';
+// Initialize client keys
+const OPENROUTER_API_KEY='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';
 // Initialize Kernel Memory client
 const kernelMemory = new KernelMemoryClient();
 
@@ -64,6 +66,26 @@ const retry = async (fn: () => Promise<any>, maxAttempts = 3, delay = 1000) => {
   }
 };
 
+// Format date as "Mar 8, 2025"
+const formatDate = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+};
+
+// Format time as "2:30 PM"
+const formatTime = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+};
+
 export default function SymptomChecker() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -73,7 +95,13 @@ export default function SymptomChecker() {
   const [definitions, setDefinitions] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMemoryLoaded, setIsMemoryLoaded] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [searchDate, setSearchDate] = useState<Date | null>(null);
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isResponseAnimating, setIsResponseAnimating] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   // Load datasets into Kernel Memory on first render
   useEffect(() => {
@@ -82,8 +110,7 @@ export default function SymptomChecker() {
         // Check if memory is already loaded
         if (!isMemoryLoaded) {
           setIsLoading(true);
-          toast.loading('Loading medical knowledge base...');
-
+          toast.loading('Loading medical knowledge base...', { duration: 3000 });
           
           // This will index your JSON files into Kernel Memory
           await kernelMemory.loadMedicalDataset('./en_medical_dialog.json');
@@ -108,6 +135,7 @@ export default function SymptomChecker() {
     if (savedConvs) {
       const parsedConvs = JSON.parse(savedConvs);
       setConversations(parsedConvs);
+      setFilteredConversations(parsedConvs);
       if (parsedConvs.length > 0 && !currentConversationId) {
         setCurrentConversationId(parsedConvs[0].id);
       }
@@ -124,7 +152,42 @@ export default function SymptomChecker() {
   // Auto scroll to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversations]);
+  }, [conversations, isResponseAnimating]);
+
+  // Close calendar when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setIsCalendarOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const filterConversationsByDate = (date: Date | null) => {
+    if (!date) {
+      setFilteredConversations(conversations);
+      setIsSearching(false);
+      return;
+    }
+    
+    // Set hours to 0 to match full day
+    const searchDay = new Date(date);
+    searchDay.setHours(0, 0, 0, 0);
+    const nextDay = new Date(searchDay);
+    nextDay.setDate(nextDay.getDate() + 1);
+    
+    const filtered = conversations.filter(conv => {
+      const convDate = new Date(conv.createdAt);
+      return convDate >= searchDay && convDate < nextDay;
+    });
+    
+    setFilteredConversations(filtered);
+    setIsSearching(true);
+  };
 
   const currentConversation = conversations.find(c => c.id === currentConversationId);
   const messages = currentConversation?.messages || [];
@@ -132,16 +195,24 @@ export default function SymptomChecker() {
   const createNewConversation = () => {
     const newConv: Conversation = {
       id: uuidv4(),
-      title: 'New chat',
+      title: formatDate(Date.now()),
       messages: [],
       createdAt: Date.now()
     };
     setConversations(prev => [newConv, ...prev]);
+    setFilteredConversations(prev => [newConv, ...prev]);
     setCurrentConversationId(newConv.id);
+    setIsSearching(false);
+    setSearchDate(null);
   };
 
   const deleteConversation = (id: string) => {
-    setConversations(prev => prev.filter(conv => conv.id !== id));
+    setConversations(prev => {
+      const newConvs = prev.filter(conv => conv.id !== id);
+      setFilteredConversations(newConvs);
+      return newConvs;
+    });
+    
     if (currentConversationId === id) {
       setCurrentConversationId(conversations[1]?.id || null);
     }
@@ -165,7 +236,7 @@ export default function SymptomChecker() {
     setTimeout(() => handleSubmit(), 100);
   };
 
-  // Call DeepSeek API
+  // Call OpenRouter API
   const callOpenRouter = async (messages: any[]) => {
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -194,7 +265,6 @@ export default function SymptomChecker() {
       return "I'm currently unable to fetch responses due to an API issue.";
     }
   };
-  
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -230,7 +300,7 @@ export default function SymptomChecker() {
       
       const getChatResponse = async () => {
         try {
-          // Prepare messages array for DeepSeek
+          // Prepare messages array for model
           const apiMessages = [
             { 
               role: 'system', 
@@ -244,15 +314,18 @@ export default function SymptomChecker() {
 
           return await callOpenRouter(apiMessages);
         } catch (modelError) {
-          console.error(`Error with DeepSeek:`, modelError);
+          console.error(`Error with API:`, modelError);
           throw modelError;
         }
       };
 
+      // Start response animation before getting the real response
+      setIsResponseAnimating(true);
+
       const assistantResponse = await retry(() => getChatResponse());
       
       if (!assistantResponse) {
-        throw new Error('No valid response received from DeepSeek');
+        throw new Error('No valid response received from API');
       }
 
       // Clean up the assistant response.
@@ -270,7 +343,7 @@ export default function SymptomChecker() {
           ? { 
               ...conv, 
               messages: newMessages, 
-              title: conv.messages.length === 0 ? userInput.substring(0, 50) : conv.title 
+              title: conv.messages.length === 0 ? userInput.substring(0, 30) + '...' : conv.title 
             }
           : conv
       ));
@@ -291,88 +364,289 @@ export default function SymptomChecker() {
     } finally {
       setUserInput('');
       setIsLoading(false);
+      // Stop response animation after a short delay to ensure smooth transition
+      setTimeout(() => {
+        setIsResponseAnimating(false);
+      }, 500);
     }
   };
 
   // Quick–action options used in the empty–state view.
   const quickActions = [
     { 
-      icon: <Image className="w-6 h-6" />, 
+      icon: <Image className="w-6 h-6 text-[#00A676]" />, 
       text: "Describe your symptoms",
       prompt: "I'm experiencing the following symptoms: [describe your symptoms]" 
     },
     { 
-      icon: <FileText className="w-6 h-6" />, 
+      icon: <FileText className="w-6 h-6 text-[#00A676]" />, 
       text: "Get medical advice",
       prompt: "Please provide medical advice for:" 
     },
     { 
-      icon: <Sparkles className="w-6 h-6" />, 
+      icon: <Sparkles className="w-6 h-6 text-[#00A676]" />, 
       text: "Learn about conditions",
       prompt: "Explain the condition of [condition name]" 
     },
     { 
-      icon: <HelpCircle className="w-6 h-6" />, 
+      icon: <HelpCircle className="w-6 h-6 text-[#00A676]" />, 
       text: "Ask health questions",
       prompt: "Can you tell me about..." 
     }
   ];
 
+  // Mini-calendar component for date selection
+  const MiniCalendar = () => {
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    
+    const getDaysInMonth = (date: Date) => {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      const days = [];
+      for (let i = 1; i <= daysInMonth; i++) {
+        days.push(new Date(year, month, i));
+      }
+      return days;
+    };
+    
+    const getDayOfWeek = (date: Date) => {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return days[date.getDay()];
+    };
+    
+    const isCurrentDay = (date: Date) => {
+      const today = new Date();
+      return date.getDate() === today.getDate() && 
+             date.getMonth() === today.getMonth() && 
+             date.getFullYear() === today.getFullYear();
+    };
+    
+    const isSelectedDay = (date: Date) => {
+      return searchDate !== null && 
+             date.getDate() === searchDate.getDate() && 
+             date.getMonth() === searchDate.getMonth() && 
+             date.getFullYear() === searchDate.getFullYear();
+    };
+    
+    const handlePrevMonth = () => {
+      const prevMonth = new Date(currentMonth);
+      prevMonth.setMonth(prevMonth.getMonth() - 1);
+      setCurrentMonth(prevMonth);
+    };
+    
+    const handleNextMonth = () => {
+      const nextMonth = new Date(currentMonth);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      setCurrentMonth(nextMonth);
+    };
+    
+    const handleSelectDay = (date: Date) => {
+      setSearchDate(date);
+      filterConversationsByDate(date);
+      setIsCalendarOpen(false);
+    };
+    
+    const daysInMonth = getDaysInMonth(currentMonth);
+    
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-3 w-64">
+        <div className="flex justify-between items-center mb-2">
+          <button 
+            onClick={handlePrevMonth}
+            className="p-1 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="font-medium">
+            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </div>
+          <button 
+            onClick={handleNextMonth}
+            className="p-1 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-4 h-4 transform rotate-180" />
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500 mb-1">
+          {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+            <div key={day}>{day}</div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-7 gap-1">
+          {/* Empty cells for days before the first of the month */}
+          {Array(daysInMonth[0].getDay()).fill(null).map((_, index) => (
+            <div key={`empty-${index}`} className="h-7"></div>
+          ))}
+          
+          {daysInMonth.map(date => (
+            <button
+              key={date.toString()}
+              onClick={() => handleSelectDay(date)}
+              className={`h-7 w-7 rounded-full flex items-center justify-center text-xs transition-colors ${
+                isCurrentDay(date) 
+                  ? 'bg-[#00A676] text-white' 
+                  : isSelectedDay(date)
+                  ? 'bg-[#e6f7f1] text-[#00A676] border border-[#00A676]'
+                  : 'hover:bg-gray-100'
+              }`}
+            >
+              {date.getDate()}
+            </button>
+          ))}
+        </div>
+        
+        <div className="mt-2 pt-2 border-t flex justify-between">
+          <button
+            onClick={() => {
+              setSearchDate(null);
+              filterConversationsByDate(null);
+              setIsCalendarOpen(false);
+            }}
+            className="text-xs text-[#00A676] hover:underline"
+          >
+            Clear
+          </button>
+          <button
+            onClick={() => setIsCalendarOpen(false)}
+            className="text-xs text-gray-500 hover:underline"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div>
-      <Nav />
-      <div className="flex h-screen bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-white">
+      <LandingNav />
+      <div className="flex flex-1 bg-white">
         {/* Sidebar */}
-        <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-[#202123] overflow-hidden`}>
+        <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-white border-r overflow-hidden`}>
           <div className="flex flex-col h-full">
             {/* New Chat Button */}
             <div className="p-4">
               <button 
                 onClick={createNewConversation}
-                className="flex items-center gap-3 w-full rounded-md border border-white/20 px-3 py-2 text-white hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-3 w-full rounded-md bg-[#00A676] px-3 py-2 text-white hover:bg-[#008c63] transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 New chat
               </button>
             </div>
 
-            {/* Conversations List */}
-            <div className="flex-1 overflow-y-auto">
-              {conversations.map(conv => (
-                <div
-                  key={conv.id}
-                  className={`group relative mx-2 my-1 rounded-lg cursor-pointer transition-colors ${
-                    currentConversationId === conv.id 
-                      ? 'bg-[#343541]' 
-                      : 'hover:bg-[#2A2B32]'
-                  }`}
+            {/* Search/Calendar Input */}
+            <div className="px-4 pb-2 relative">
+              <div className="relative">
+                <button
+                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:border-[#00A676] transition-colors"
                 >
-                  <div 
-                    onClick={() => setCurrentConversationId(conv.id)}
-                    className="flex items-center gap-3 p-3 text-gray-300"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span className="truncate text-sm">
-                      {conv.title || 'New chat'}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    {searchDate 
+                      ? formatDate(searchDate.getTime())
+                      : 'Search by date'}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteConversation(conv.id);
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 
-                      opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
+                  {searchDate && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSearchDate(null);
+                        filterConversationsByDate(null);
+                      }}
+                      className="p-1 rounded-full hover:bg-gray-100"
+                    >
+                      <X className="w-3 h-3 text-gray-500" />
+                    </button>
+                  )}
+                </button>
+                
+                {isCalendarOpen && (
+                  <div 
+                    ref={calendarRef}
+                    className="absolute z-10 mt-1"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <MiniCalendar />
+                  </div>
+                )}
+              </div>
+              
+              {isSearching && (
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {filteredConversations.length} 
+                    {filteredConversations.length === 1 ? ' chat' : ' chats'} 
+                    found
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSearchDate(null);
+                      filterConversationsByDate(null);
+                    }}
+                    className="text-xs text-[#00A676] hover:underline"
+                  >
+                    Clear search
                   </button>
                 </div>
-              ))}
+              )}
+            </div>
+
+            {/* Conversations List */}
+            <div className="flex-1 overflow-y-auto py-2">
+              {filteredConversations.length === 0 ? (
+                <div className="text-center text-gray-500 text-sm py-8">
+                  {isSearching ? 'No chats found for this date.' : 'No chats yet. Start a new chat!'}
+                </div>
+              ) : (
+                filteredConversations.map(conv => (
+                  <div
+                    key={conv.id}
+                    className={`group relative mx-2 my-1 rounded-lg cursor-pointer transition-colors ${
+                      currentConversationId === conv.id 
+                        ? 'bg-gray-100' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div 
+                      onClick={() => setCurrentConversationId(conv.id)}
+                      className="flex flex-col p-3 text-gray-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="w-4 h-4 text-[#00A676]" />
+                        <span className="truncate text-sm font-medium">
+                          {formatDate(conv.createdAt)}
+                        </span>
+                      </div>
+                      {conv.messages.length > 0 && (
+                        <p className="ml-7 text-xs text-gray-500 truncate">
+                          {conv.messages[0].content.substring(0, 40)}...
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteConversation(conv.id);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 
+                        opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Bottom Section */}
-            <div className="border-t border-white/20 p-4">
-              <button className="flex items-center gap-3 w-full rounded-md px-3 py-2 text-gray-300 hover:bg-gray-700 transition-colors">
+            <div className="border-t p-4">
+              <button className="flex items-center gap-3 w-full rounded-md px-3 py-2 text-gray-700 hover:bg-gray-100 transition-colors">
                 <Settings className="w-4 h-4" />
                 Settings
               </button>
@@ -381,32 +655,39 @@ export default function SymptomChecker() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col bg-[#343541]">
+        <div className="flex-1 flex flex-col bg-white">
           {/* Header */}
-          <div className="flex items-center p-4 border-b border-white/20">
+          <div className="flex items-center p-4 border-b">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 text-gray-300 hover:bg-gray-700 rounded-md"
+              className="p-2 text-gray-700 hover:bg-gray-100 rounded-md"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="ml-4 text-white font-semibold">Medical Assistant with RAG</h1>
+            <h1 className="ml-4 text-gray-800 font-semibold">CuraEase Symptom Checker</h1>
+            {currentConversation && (
+              <div className="ml-auto text-sm text-gray-500">
+                {formatDate(currentConversation.createdAt)}
+              </div>
+            )}
           </div>
 
           {/* Chat Area */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto bg-gray-50">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-white">
-                <h2 className="text-3xl font-bold mb-8">How can I help you?</h2>
-                <div className="grid grid-cols-2 gap-4 max-w-2xl px-4">
+              <div className="h-full flex flex-col items-center justify-center text-gray-800 p-6">
+                <h2 className="text-3xl font-bold mb-6">How can we help?</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
                   {quickActions.map((item, i) => (
                     <button
                       key={i}
                       onClick={() => handleQuickAction(item.prompt)}
-                      className="p-4 rounded-lg border border-white/20 hover:bg-gray-700 transition-colors cursor-pointer flex flex-col items-center gap-2"
+                      className="p-6 rounded-lg border border-gray-200 hover:border-[#00A676] hover:shadow-md transition-all cursor-pointer flex items-center gap-4 bg-white"
                     >
-                      {item.icon}
-                      <span className="text-sm">{item.text}</span>
+                      <div className="p-3 rounded-full bg-[#f0fdf9]">
+                        {item.icon}
+                      </div>
+                      <span className="text-sm font-medium">{item.text}</span>
                     </button>
                   ))}
                 </div>
@@ -416,54 +697,113 @@ export default function SymptomChecker() {
                 {messages.map((msg, index) => (
                   <div
                     key={index}
-                    className={`py-6 ${msg.role === 'assistant' ? 'bg-[#444654]' : ''}`}
+                    className={`my-4 ${
+                      index === messages.length - 1 && isResponseAnimating && msg.role === 'assistant' 
+                        ? 'animate-pulse'
+                        : ''
+                    }`}
                   >
-                    <div className="max-w-3xl mx-auto flex gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        msg.role === 'user' ? 'bg-blue-500' : 'bg-green-500'
-                      }`}>
-                        {msg.role === 'user' ? 'U' : 'A'}
-                      </div>
-                      <div className="flex-1 text-gray-100 whitespace-pre-wrap">
-                        {msg.content}
+                    <div className={`rounded-lg p-4 ${
+                      msg.role === 'user' 
+                        ? 'bg-white border border-gray-200 ml-12' 
+                        : 'bg-[#f0fdf9] border border-[#e6f7f1] mr-12'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                          msg.role === 'user' 
+                            ? 'bg-[#00A676] text-white' 
+                            : 'bg-[#00A676] bg-opacity-20 text-[#00A676]'
+                        }`}>
+                          {msg.role === 'user' ? 'You' : 'AI'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-gray-800">
+                              {msg.role === 'user' ? 'You' : 'CuraEase AI'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatTime(msg.timestamp)}
+                            </span>
+                          </div>
+                          <div className="text-gray-700 whitespace-pre-wrap">
+                            {msg.content}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
+                
+                {isLoading && messages.length > 0 && !isResponseAnimating && (
+                  <div className="flex justify-center my-4">
+                    <div className="bg-gray-100 rounded-full py-2 px-4 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-[#00A676] animate-spin" />
+                      <span className="text-sm text-gray-600">CuraEase is thinking...</span>
+                    </div>
+                  </div>
+                )}
+                
                 <div ref={chatEndRef} />
               </div>
             )}
           </div>
 
+          {/* Medical Terms Box */}
+          {definitions.length > 0 && (
+            <div className="bg-white border-t border-gray-200">
+              <div className="max-w-3xl mx-auto p-4">
+                <div className="bg-[#f0fdf9] rounded-lg p-4 border border-[#e6f7f1]">
+                  <h3 className="text-[#00A676] font-semibold flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4" />
+                    Medical Terms Explained
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                    {definitions.map((def, i) => (
+                      <div key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                        <div className="w-1 h-1 rounded-full bg-[#00A676] mt-2"></div>
+                        <span>{def}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Input Area */}
-          <div className="border-t border-white/20 bg-[#343541] p-4">
+          <div className="border-t bg-white p-4">
             <div className="max-w-3xl mx-auto">
               <form onSubmit={handleSubmit} className="relative">
-                <div className="relative flex items-center">
+                {error && (
+                  <div className="text-red-500 text-sm mb-2">
+                    {error}
+                  </div>
+                )}
+                <div className="flex items-center bg-white border border-gray-300 rounded-lg focus-within:border-[#00A676] overflow-hidden">
                   <input
+                    type="text"
                     value={userInput}
-                    onChange={(e) => {
-                      setUserInput(e.target.value);
-                      setError('');
-                    }}
-                    placeholder="Message Medical Assistant..."
-                    className="w-full bg-[#40414F] text-white rounded-lg pl-4 pr-12 py-3 
-                      focus:outline-none focus:ring-2 focus:ring-blue-500 border border-white/20"
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Describe your symptoms or ask a medical question..."
+                    className="w-full px-4 py-3 outline-none text-gray-700"
                     disabled={isLoading}
                   />
-                  <div className="absolute right-2 flex items-center gap-2">
-                    {!isLoading && (
-                      <button
-                        type="button"
-                        className="p-1 text-gray-400 hover:text-gray-100 transition-colors"
-                      >
-                        <Mic className="w-5 h-5" />
-                      </button>
-                    )}
+                  <div className="flex items-center px-3">
+                    <button
+                      type="button"
+                      className="p-1 text-gray-500 hover:text-[#00A676] transition-colors"
+                      disabled={isLoading}
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
                     <button
                       type="submit"
-                      disabled={isLoading}
-                      className="p-1 text-gray-400 hover:text-gray-100 transition-colors disabled:opacity-50"
+                      className={`ml-2 p-2 rounded-md ${
+                        userInput.trim() && !isLoading
+                          ? 'bg-[#00A676] text-white hover:bg-[#008c63]'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      } transition-colors`}
+                      disabled={!userInput.trim() || isLoading}
                     >
                       {isLoading ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -472,46 +812,14 @@ export default function SymptomChecker() {
                       )}
                     </button>
                   </div>
-                  {error && (
-                    <div className="absolute bottom-full left-0 w-full mb-2 px-2">
-                      <div className="text-red-400 text-sm bg-[#40414F] p-2 rounded-lg border border-red-400">
-                        {error}
-                      </div>
-                    </div>
-                  )}
+                </div>
+                <div className="mt-2 text-xs text-gray-500 flex justify-between">
+                  <span>Your conversation is private and won't be shared.</span>
+                  <span>
+                    {500 - userInput.length} characters remaining
+                  </span>
                 </div>
               </form>
-
-              {/* Bottom Text */}
-              <div className="text-xs text-center mt-2 text-gray-400">
-                Medical AI Assistant can make mistakes. Consider verifying important information.
-              </div>
-
-              {/* Quick Actions Row (Optional additional actions) */}
-              <div className="flex justify-center gap-2 mt-4">
-                {['Create image', 'Summarize text', 'Surprise me', 'Get advice', 'More'].map((action, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleQuickAction(action)}
-                    className="px-3 py-1.5 bg-[#40414F] text-gray-300 text-sm rounded-full 
-                      border border-white/20 hover:bg-[#4A4B55] transition-colors"
-                  >
-                    {action}
-                  </button>
-                ))}
-              </div>
-
-              {/* Medical Terms Box */}
-              {definitions.length > 0 && (
-                <div className="mt-4 bg-[#40414F] rounded-lg p-4 border border-white/20">
-                  <h3 className="text-blue-400 font-semibold mb-2">Medical Terms</h3>
-                  <ul className="space-y-1">
-                    {definitions.map((def, i) => (
-                      <li key={i} className="text-sm text-gray-300">• {def}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
         </div>
