@@ -448,10 +448,28 @@ export default function SymptomChecker() {
       setIsCalendarOpen(false);
     };
     
+    // Add month selection dropdown
+    const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newMonth = new Date(currentMonth);
+      newMonth.setMonth(parseInt(e.target.value));
+      setCurrentMonth(newMonth);
+    };
+  
+    const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newYear = new Date(currentMonth);
+      newYear.setFullYear(parseInt(e.target.value));
+      setCurrentMonth(newYear);
+    };
+    
     const daysInMonth = getDaysInMonth(currentMonth);
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    // Generate year options (from current year - 5 to current year + 5)
+    const currentYear = new Date().getFullYear();
+    const yearOptions = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
     
     return (
-      <div className="bg-white rounded-lg shadow-lg p-3 w-64">
+      <div className="bg-white rounded-lg shadow-lg p-3 w-72">
         <div className="flex justify-between items-center mb-2">
           <button 
             onClick={handlePrevMonth}
@@ -459,9 +477,34 @@ export default function SymptomChecker() {
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="font-medium">
-            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          
+          {/* Replace static month display with dropdowns */}
+          <div className="flex items-center space-x-1">
+            <select 
+              value={currentMonth.getMonth()} 
+              onChange={handleMonthChange}
+              className="text-sm border-0 bg-transparent font-medium cursor-pointer outline-none"
+            >
+              {months.map((month, index) => (
+                <option key={month} value={index}>
+                  {month}
+                </option>
+              ))}
+            </select>
+            
+            <select 
+              value={currentMonth.getFullYear()} 
+              onChange={handleYearChange}
+              className="text-sm border-0 bg-transparent font-medium cursor-pointer outline-none"
+            >
+              {yearOptions.map(year => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
           </div>
+          
           <button 
             onClick={handleNextMonth}
             className="p-1 rounded-full hover:bg-gray-100"
@@ -491,7 +534,7 @@ export default function SymptomChecker() {
                   ? 'bg-[#00A676] text-white' 
                   : isSelectedDay(date)
                   ? 'bg-[#e6f7f1] text-[#00A676] border border-[#00A676]'
-                  : 'hover:bg-gray-100'
+                  : 'hover:bg-gray-100 text-gray-700'  // Add explicit text color
               }`}
             >
               {date.getDate()}
@@ -569,7 +612,15 @@ export default function SymptomChecker() {
                 {isCalendarOpen && (
                   <div 
                     ref={calendarRef}
-                    className="absolute z-10 mt-1"
+                    className="absolute z-50 mt-1 left-0"
+                    style={{
+                      position: 'fixed',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                      borderRadius: '8px'
+                    }}
                   >
                     <MiniCalendar />
                   </div>
@@ -578,7 +629,7 @@ export default function SymptomChecker() {
               
               {isSearching && (
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <span className="text-xs text-black-500 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {filteredConversations.length} 
                     {filteredConversations.length === 1 ? ' chat' : ' chats'} 
