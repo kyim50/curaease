@@ -253,9 +253,18 @@ export default function Appointments() {
   const currentMonth = selectedDate ? format(selectedDate, 'MMMM yyyy') : format(new Date(), 'MMMM yyyy');
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <Nav />
-      <div className="container mx-auto py-8 px-4">
+    <div className="bg-gray-50 min-h-screen flex">
+      {/* Nav sidebar */}
+      <div className="w-64 fixed h-full">
+        <Nav />
+      </div>
+      
+      {/* Main content - shifted to be beside the nav */}
+      <div className="ml-64 flex-1 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
+        </div>
+        
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <div className="grid grid-cols-12 gap-0">
             {/* Sidebar */}

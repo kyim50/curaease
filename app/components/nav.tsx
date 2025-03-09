@@ -45,71 +45,93 @@ export default function Nav() {
   };
 
   return (
-    <nav className="bg-[#00A676] border-b border-ds-primary/20 p-4">
-      <div className="max-w-6xl mx-auto flex justify-between items-center">
-        <Link href="/dashboard" className="text-xl font-bold text-white hover:text-white/90 hover:scale-110 transition-transform duration-500">
+    <div className="bg-white rounded-xl shadow-sm p-6 h-full flex flex-col">
+      {/* Logo at the top */}
+      <div className="mb-8 text-center">
+        <Link href="/dashboard" className="text-xl font-bold text-indigo-700 hover:text-indigo-800 transition-colors duration-300">
           CuraEase
         </Link>
-        <div className="flex items-center space-x-6">
-          <div className="flex space-x-6 mr-4">
-            <Link href="/appointments" className="text-ds-text hover:text-ds-primary">
-              Appointments
-            </Link>
-            <Link href="/symptom-checker" className="text-ds-text hover:text-ds-primary">
-              Symptom Checker
-            </Link>
-            <Link href="/health-info" className="text-ds-text hover:text-ds-primary">
-              Health Info
-            </Link>
-            <Link href="/medications" className="text-ds-text hover:text-ds-primary">
-              Medications
-            </Link>
+      </div>
+
+      {/* Navigation Menu */}
+      <div className="flex-grow mb-8">
+        <h2 className="text-lg font-semibold text-indigo-800 mb-4">Menu</h2>
+        <div className="space-y-3">
+          <Link href="/dashboard" className="flex items-center px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg">
+            <span className="w-5 h-5 mr-2">🏠</span>
+            Dashboard
+          </Link>
+          <Link href="/appointments" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+            <span className="w-5 h-5 mr-2">📅</span>
+            Appointments
+          </Link>
+          <Link href="/symptom-checker" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+            <span className="w-5 h-5 mr-2">🔍</span>
+            Symptom Checker
+          </Link>
+          <Link href="/health-info" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+            <span className="w-5 h-5 mr-2">📊</span>
+            Health Info
+          </Link>
+          <Link href="/medications" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+            <span className="w-5 h-5 mr-2">💊</span>
+            Medications
+          </Link>
+        </div>
+      </div>
+
+      {/* User Profile at the bottom */}
+      {user && (
+        <div className="mt-auto border-t pt-4">
+          <div 
+            className="flex items-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+          >
+            {profileImage ? (
+              <img 
+                src={profileImage} 
+                alt="User Profile" 
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
+              </div>
+            )}
+            <div className="ml-3 flex-grow">
+              <p className="text-sm font-medium text-gray-800 truncate">
+                {user.displayName || user.email}
+              </p>
+            </div>
+            <svg 
+              className={`w-4 h-4 text-gray-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
           
-          {user && (
-            <div className="relative">
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center space-x-2 focus:outline-none"
+          {dropdownOpen && (
+            <div className="mt-2 bg-white rounded-lg shadow-inner border p-2 z-50">
+              <Link 
+                href="/profile" 
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md"
               >
-                {profileImage ? (
-                  <img 
-                    src={profileImage} 
-                    alt="User Profile" 
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white font-bold">
-                    {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
-                  </div>
-                )}
+                Profile
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md mt-1"
+              >
+                Sign Out
               </button>
-              
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-2 text-sm text-gray-700">
-                      {user.displayName || user.email}
-                    </div>
-                    <Link 
-                      href="/profile" 
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
-      </div>
-    </nav>
+      )}
+    </div>
   );
 }
