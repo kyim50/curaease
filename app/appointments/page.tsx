@@ -5,7 +5,7 @@ import { addHours, setHours, setMinutes, areIntervalsOverlapping, format } from 
 import Nav from '../components/nav';
 import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { db, auth } from '../firebase'; // Adjust this import based on your Firebase config path
+import { db, auth } from '../firebase';
 
 interface Doctor {
   uid: string;
@@ -24,7 +24,7 @@ interface User {
 
 interface Appointment {
   id: string;
-  doctor: string; // This holds the doctor's UID
+  doctor: string;
   patient: string;
   patientId: string;
   start: Date;
@@ -47,12 +47,11 @@ export default function Appointments() {
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<'Consultation' | 'Checkup' | 'Specialization'>('Consultation');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Check authentication and fetch user data
+  // Authentication & data fetching effects remain unchanged
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Query Firestore to get additional user data
           const usersRef = collection(db, 'users');
           const q = query(usersRef, where('uid', '==', user.uid));
           const querySnapshot = await getDocs(q);
@@ -66,7 +65,6 @@ export default function Appointments() {
               email: user.email || userData.email || ''
             });
           } else {
-            // If no user document found, create a minimal user object
             setCurrentUser({
               uid: user.uid,
               firstName: user.displayName?.split(' ')[0] || '',
@@ -79,19 +77,16 @@ export default function Appointments() {
         }
       } else {
         setCurrentUser(null);
-        // Optional: redirect to login page if not logged in
-        // window.location.href = '/login';
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Fetch doctors and appointments from Firestore
+  // Fetch doctors and appointments
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch doctors
         const doctorsCollection = collection(db, 'doctors');
         const doctorSnapshot = await getDocs(doctorsCollection);
         const doctorsList = doctorSnapshot.docs.map(doc => ({
@@ -101,15 +96,12 @@ export default function Appointments() {
         
         setDoctors(doctorsList);
         
-        // Fetch appointments
         const appointmentsCollection = collection(db, 'appointments');
         const appointmentSnapshot = await getDocs(appointmentsCollection);
         const appointmentsList = appointmentSnapshot.docs.map(doc => {
           const data = doc.data();
-          // Safely handle timestamps or date strings
           let startTime: Date;
           
-          // Check if Appointment Time is a Firestore Timestamp
           if (data["Appointment Time"] && typeof data["Appointment Time"].toDate === 'function') {
             startTime = data["Appointment Time"].toDate();
           } else if (data["Appointment Time"] instanceof Date) {
@@ -117,7 +109,6 @@ export default function Appointments() {
           } else if (typeof data["Appointment Time"] === 'string') {
             startTime = new Date(data["Appointment Time"]);
           } else {
-            console.warn('Invalid appointment time format:', data["Appointment Time"]);
             startTime = new Date();
           }
           
@@ -146,22 +137,17 @@ export default function Appointments() {
     fetchData();
   }, []);
 
-  // Then update the handleCancel function
-const handleCancel = async (id: string) => {
-  try {
-    // Delete from Firestore
-    const appointmentRef = doc(db, 'appointments', id);
-    await deleteDoc(appointmentRef);
-    
-    // Then update the UI
-    setAppointments(appointments.filter(a => a.id !== id));
-    
-    alert("Appointment successfully cancelled");
-  } catch (error) {
-    console.error("Error cancelling appointment:", error);
-    alert("Failed to cancel appointment. Please try again.");
-  }
-};
+  const handleCancel = async (id: string) => {
+    try {
+      const appointmentRef = doc(db, 'appointments', id);
+      await deleteDoc(appointmentRef);
+      setAppointments(appointments.filter(a => a.id !== id));
+      alert("Appointment successfully cancelled");
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel appointment. Please try again.");
+    }
+  };
 
   const getDoctorAppointments = (doctorId: string, date: Date): Appointment[] => {
     return appointments.filter(app => 
@@ -179,8 +165,8 @@ const handleCancel = async (id: string) => {
 
   const findAvailableSlot = (doctorId: string, date: Date, duration: number): Date | null => {
     const doctorAppointments = getDoctorAppointments(doctorId, date);
-    let startTime = setMinutes(setHours(new Date(date), 9), 0); // Start at 9 AM
-    const endTime = setMinutes(setHours(new Date(date), 17), 0); // End at 5 PM
+    let startTime = setMinutes(setHours(new Date(date), 9), 0);
+    const endTime = setMinutes(setHours(new Date(date), 17), 0);
 
     while (startTime < endTime) {
       const endSlot = addHours(startTime, duration);
@@ -195,10 +181,10 @@ const handleCancel = async (id: string) => {
         return startTime;
       }
 
-      startTime = addHours(startTime, 1); // Move to the next hour
+      startTime = addHours(startTime, 1);
     }
 
-    return null; // No available slot found
+    return null;
   };
 
   const handleBookAppointment = async () => {
@@ -221,14 +207,12 @@ const handleCancel = async (id: string) => {
     }
 
     try {
-      // Get patient's full name from current user
       const patientName = `${currentUser.firstName} ${currentUser.lastName}`.trim() || currentUser.email;
       
-      // Create the appointment in Firestore with the specified fields
       const appointmentsCollection = collection(db, 'appointments');
       const appointmentData = {
         "Appointment Date": format(availableSlot, 'yyyy-MM-dd'),
-        "Appointment Time": availableSlot, // Firestore will convert this to Timestamp
+        "Appointment Time": availableSlot,
         "Appointment Type": selectedAppointmentType,
         "Createdat": serverTimestamp(),
         "Doctor": selectedDoctorId,
@@ -239,7 +223,6 @@ const handleCancel = async (id: string) => {
 
       const docRef = await addDoc(appointmentsCollection, appointmentData);
       
-      // Add the appointment to the local state
       const newAppointment: Appointment = {
         id: docRef.id,
         doctor: selectedDoctorId,
@@ -267,108 +250,294 @@ const handleCancel = async (id: string) => {
     return <div className="flex justify-center items-center h-screen">Loading doctors and appointments...</div>;
   }
 
-  return (
-    <div>
-    <Nav />
-    <div className="space-y-8 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-ds-primary">Appointment Management</h1>
-      
-      {!currentUser ? (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-          <p>Please log in to book appointments.</p>
-        </div>
-      ) : (
-        <div className="bg-ds-dark/50 p-4 rounded-lg border border-ds-primary/20 mb-4">
-          <p className="text-ds-text">Logged in as: <span className="font-semibold">{currentUser.firstName} {currentUser.lastName}</span></p>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-ds-dark/50 p-6 rounded-lg border border-ds-primary/20">
-          <Calendar
-            availableDays={[new Date()]} // Example: today is available
-            bookedAppointments={appointments.map(app => app.start)}
-            onDaySelect={setSelectedDate}
-          />
-        </div>
+  const currentMonth = selectedDate ? format(selectedDate, 'MMMM yyyy') : format(new Date(), 'MMMM yyyy');
 
-        <div className="bg-ds-dark/50 p-6 rounded-lg border border-ds-primary/20">
-          <h2 className="text-xl font-semibold text-ds-primary mb-4">Your Appointments</h2>
-          {currentUser ? (
-            getUserAppointments().length > 0 ? (
-              getUserAppointments().map(app => (
-                <div key={app.id} className="flex justify-between items-center p-4 mb-2 bg-ds-dark rounded">
-                  <div>
-                    <p className="font-medium text-ds-text">{getDoctorFullName(app.doctor)}</p>
-                    <p className="text-sm text-ds-text/80">
-                      {app.start.toLocaleDateString()} {app.start.toLocaleTimeString()}
-                    </p>
-                    <p className="text-sm text-ds-text/80">Type: {app.type}</p>
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      <Nav />
+      <div className="container mx-auto py-8 px-4">
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="grid grid-cols-12 gap-0">
+            {/* Sidebar */}
+            <div className="col-span-3 border-r border-gray-200 p-6">
+              <div className="flex items-center space-x-3 mb-8">
+                <div className="rounded-full bg-indigo-100 p-2">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                    {currentUser?.firstName?.charAt(0) || 'U'}
                   </div>
-                  <button 
-                    onClick={() => handleCancel(app.id)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    Cancel
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">
+                    {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Guest'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {currentUser?.email || 'Not logged in'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center text-indigo-600 font-medium">
+                  <span className="mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  My Appointments
+                </div>
+                <div className="flex items-center text-gray-500">
+                  <span className="mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 005 10a6 6 0 0012 0c0-.35-.03-.69-.08-1.01A5 5 0 0010 7z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  Doctors
+                </div>
+                <div className="flex items-center text-gray-500">
+                  <span className="mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  Messages
+                </div>
+              </div>
+              
+              <div className="mt-12">
+                <div className="bg-indigo-100 rounded-lg p-4">
+                  <div className="bg-indigo-600 text-white p-3 rounded-lg mb-2">
+                    <p className="text-sm">For faster responses, chat with your doctor!</p>
+                    <button className="mt-2 bg-white text-indigo-600 text-xs font-medium py-1 px-3 rounded">Chat</button>
+                  </div>
+                  <div className="flex justify-center">
+                    <img src="/img/doctor-chat.svg" alt="Chat with doctor" className="w-20 h-20" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Main content */}
+            <div className="col-span-9 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex space-x-4">
+                  <button className="px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-gray-300 rounded-md">
+                    Info
+                  </button>
+                  <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md">
+                    Doctor page
                   </button>
                 </div>
-              ))
-            ) : (
-              <p className="text-ds-text/80">No scheduled appointments</p>
-            )
-          ) : (
-            <p className="text-ds-text/80">Log in to view your appointments</p>
-          )}
+                <div className="flex space-x-2">
+                  <button className="p-2 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                    </svg>
+                  </button>
+                  <button className="p-2 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button className="p-2 text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-12 gap-6">
+                {/* Left column - appointment types */}
+                <div className="col-span-4">
+                  <h2 className="text-lg font-medium text-gray-900 mb-4">My Consultations</h2>
+                  
+                  {/* Card 1 */}
+                  <div className="bg-indigo-50 rounded-xl p-3 mb-3 cursor-pointer transition-transform hover:scale-105">
+                    <div className="p-4 flex justify-center">
+                      <img 
+                        src="/img/consultation.svg" 
+                        alt="Consultation" 
+                        className="w-16 h-16" 
+                      />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-gray-800 font-medium text-sm">Consultation</h3>
+                      <p className="text-gray-500 text-xs mt-1">1 hour session</p>
+                    </div>
+                  </div>
+                  
+                  {/* Card 2 */}
+                  <div className="bg-indigo-50 rounded-xl p-3 mb-3 cursor-pointer transition-transform hover:scale-105">
+                    <div className="p-4 flex justify-center">
+                      <img 
+                        src="/img/checkup.svg" 
+                        alt="Checkup" 
+                        className="w-16 h-16" 
+                      />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-gray-800 font-medium text-sm">Checkup</h3>
+                      <p className="text-gray-500 text-xs mt-1">2 hour session</p>
+                    </div>
+                  </div>
+                  
+                  {/* Card 3 */}
+                  <div className="bg-indigo-600 rounded-xl p-3 cursor-pointer">
+                    <div className="p-4 flex justify-center">
+                      <img 
+                        src="/img/specialist.svg" 
+                        alt="Specialization" 
+                        className="w-16 h-16" 
+                      />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-white font-medium text-sm">Specialization</h3>
+                      <p className="text-indigo-200 text-xs mt-1">3 hour session</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">Join for Our</h3>
+                    <p className="text-xs text-gray-500 mb-3">Healthcare membership</p>
+                    <button className="w-full bg-indigo-100 text-indigo-600 text-sm font-medium py-2 px-3 rounded-md">
+                      View all schedule
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Right column - calendar */}
+                <div className="col-span-8">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-medium text-gray-900">July 2025</h2>
+                    <div className="flex space-x-1">
+                      <button className="p-1 rounded-full bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <button className="p-1 rounded-full bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Calendar header */}
+                    <div className="grid grid-cols-7 text-center border-b border-gray-200">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                        <div key={i} className="py-2 text-sm font-medium text-gray-600">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Calendar days */}
+                    <div className="grid grid-cols-7 text-center">
+                      {/* Row 1 */}
+                      {[null, null, null, null, 1, 2, 3].map((day, i) => (
+                        <div key={i} className={`py-3 border-b border-gray-200 ${day ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
+                          {day && <span className="text-sm text-gray-900">{day}</span>}
+                        </div>
+                      ))}
+                      
+                      {/* Row 2 */}
+                      {[4, 5, 6, 7, 8, 9, 10].map((day, i) => (
+                        <div key={i} className={`py-3 border-b border-gray-200 ${day === 6 ? 'bg-indigo-100' : ''} cursor-pointer hover:bg-gray-50`}>
+                          <span className={`text-sm ${day === 6 ? 'text-indigo-600 font-medium' : 'text-gray-900'}`}>{day}</span>
+                        </div>
+                      ))}
+                      
+                      {/* Row 3 */}
+                      {[11, 12, 13, 14, 15, 16, 17].map((day, i) => (
+                        <div key={i} className={`py-3 border-b border-gray-200 ${day === 14 ? 'bg-indigo-600' : ''} cursor-pointer hover:bg-gray-50`}>
+                          <span className={`text-sm ${day === 14 ? 'text-white font-medium' : 'text-gray-900'}`}>{day}</span>
+                        </div>
+                      ))}
+                      
+                      {/* Row 4 */}
+                      {[18, 19, 20, 21, 22, 23, 24].map((day, i) => (
+                        <div key={i} className="py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50">
+                          <span className="text-sm text-gray-900">{day}</span>
+                        </div>
+                      ))}
+                      
+                      {/* Row 5 */}
+                      {[25, 26, 27, 28, 29, 30, 31].map((day, i) => (
+                        <div key={i} className="py-3 cursor-pointer hover:bg-gray-50">
+                          <span className="text-sm text-gray-900">{day}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Upcoming Appointments</h3>
+                    
+                    <div className="space-y-3">
+                      {getUserAppointments().length > 0 ? (
+                        getUserAppointments().slice(0, 3).map(app => (
+                          <div key={app.id} className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+                            <div className="bg-orange-100 p-2 rounded-full mr-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium text-gray-900">{getDoctorFullName(app.doctor)}</h4>
+                              <p className="text-xs text-gray-500">{format(app.start, 'MMM d, h:mm a')} - {app.type}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-500">No upcoming appointments</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-4">
+                      <button 
+                        onClick={handleBookAppointment}
+                        className="w-full bg-indigo-600 text-white text-sm font-medium py-2 px-3 rounded-md hover:bg-indigo-700"
+                        disabled={!currentUser || !selectedDoctorId || !selectedDate}
+                      >
+                        Book
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">Select a Doctor:</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  {doctors.map(doctor => (
+                    <div
+                      key={doctor.uid}
+                      onClick={() => setSelectedDoctorId(doctor.uid)}
+                      className={`p-4 rounded-lg cursor-pointer transition-all ${
+                        selectedDoctorId === doctor.uid ? 'bg-indigo-100 border-2 border-indigo-500' : 'bg-white border border-gray-200 hover:border-indigo-300'
+                      }`}
+                    >
+                      <div className="flex items-center mb-2">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium mr-3">
+                          {doctor.firstName.charAt(0)}{doctor.lastName.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Dr. {doctor.firstName} {doctor.lastName}</h3>
+                          <p className="text-xs text-gray-500">{doctor.specialty}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="bg-ds-dark/50 p-6 rounded-lg border border-ds-primary/20">
-        <h2 className="text-xl font-semibold text-ds-primary mb-4">Book an Appointment</h2>
-        
-        <div>
-          <label htmlFor="doctor-select" className="block text-ds-primary mb-2">Select a Doctor:</label>
-          <select
-            id="doctor-select"
-            className="block w-full p-2 border border-ds-primary rounded text-gray-800"  
-            value={selectedDoctorId}
-            onChange={(e) => setSelectedDoctorId(e.target.value)}
-            disabled={!currentUser}
-          >
-            <option value="">Select a Doctor</option>
-            {doctors.map(doctor => (
-              <option key={doctor.uid} value={doctor.uid}>
-                Dr. {doctor.firstName} {doctor.lastName} - {doctor.specialty}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mt-4">
-          <label htmlFor="appointment-type-select" className="block text-ds-primary mb-2">Select Appointment Type:</label>
-          <select
-            id="appointment-type-select"
-            className="block w-full p-2 border border-ds-primary rounded text-gray-800"
-            value={selectedAppointmentType}
-            onChange={(e) => setSelectedAppointmentType(e.target.value as 'Consultation' | 'Checkup' | 'Specialization')}
-            disabled={!currentUser}
-          >
-            <option value="Consultation">Consultation (1 hour)</option>
-            <option value="Checkup">Checkup (2 hours)</option>
-            <option value="Specialization">Specialization (3 hours)</option>
-          </select>
-        </div>
-
-        <div className="mt-4">
-          <button
-            onClick={handleBookAppointment}
-            className="w-full bg-ds-primary text-white p-2 rounded-md hover:bg-ds-primary/80 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            disabled={!currentUser}
-          >
-            Book Appointment
-          </button>
-        </div>
-      </div>
-    </div>
     </div>
   );
 }

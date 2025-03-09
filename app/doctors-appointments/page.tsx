@@ -185,11 +185,11 @@ export default function Appointments() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      <div className="min-h-screen bg-white">
         <Nav />
         <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ds-primary"></div>
-          <span className="ml-3">Loading appointments...</span>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+          <span className="ml-3 text-gray-700">Loading appointments...</span>
         </div>
       </div>
     );
@@ -197,12 +197,12 @@ export default function Appointments() {
 
   if (!isDoctor) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      <div className="min-h-screen bg-white">
         <Nav />
         <div className="max-w-6xl mx-auto p-6">
-          <div className="bg-red-900/50 border-l-4 border-red-500 p-6 rounded-lg mb-4">
-            <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-            <p>Only doctors can access this page. Please log in with a doctor account.</p>
+          <div className="bg-red-100 border-l-4 border-red-500 p-6 rounded-lg mb-4">
+            <h1 className="text-2xl font-bold mb-2 text-gray-800">Access Denied</h1>
+            <p className="text-gray-700">Only doctors can access this page. Please log in with a doctor account.</p>
           </div>
         </div>
       </div>
@@ -210,43 +210,75 @@ export default function Appointments() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+    <div className="min-h-screen bg-white">
       <Nav />
-      <div className="max-w-6xl mx-auto p-6 space-y-8">
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-ds-primary">My Patient Appointments</h1>
-          <div className="px-4 py-2 bg-ds-primary/20 rounded-lg border border-ds-primary/30">
-            <p className="text-ds-primary">
-              <span className="font-semibold">Dr. {currentUser?.firstName} {currentUser?.lastName}</span>
-              <span className="text-sm ml-2 opacity-80">{currentUser?.specialty}</span>
-            </p>
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-indigo-600 rounded-full mr-2 flex items-center justify-center">
+              <span className="text-white text-sm">{currentUser?.firstName?.charAt(0)}{currentUser?.lastName?.charAt(0)}</span>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-800">Doctor Appointment</h1>
+          </div>
+          <div className="flex space-x-4">
+            <div className="px-3 py-1 bg-gray-100 rounded-md text-sm text-gray-600">Info</div>
+            <div className="px-3 py-1 bg-indigo-100 rounded-md text-sm text-indigo-600">Doctor page</div>
           </div>
         </div>
       
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-1 bg-ds-dark/70 p-6 rounded-lg border border-ds-primary/20 shadow-lg">
-            <h2 className="text-xl font-semibold text-ds-primary mb-4">Calendar</h2>
-            <div className="rounded-md border border-ds-primary/20 bg-ds-dark/50 p-3">
-              <Calendar
-                availableDays={[new Date()]}
-                bookedAppointments={appointments.map(app => app.start)}
-                onDaySelect={setSelectedDate}
-              />
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-1">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <h2 className="text-lg font-medium text-gray-800 mb-4">July 2025</h2>
+              <div className="rounded-md">
+                <Calendar
+                  availableDays={[new Date()]}
+                  bookedAppointments={appointments.map(app => app.start)}
+                  onDaySelect={setSelectedDate}
+                />
+              </div>
+              
+              <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
+                <h3 className="font-medium text-indigo-700 mb-2">Selected Date</h3>
+                <p className="text-gray-800">{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'No date selected'}</p>
+                <p className="text-sm mt-2 text-gray-600">
+                  {selectedDate ? 
+                    `${getDoctorAppointments(selectedDate).length} appointments scheduled` : 
+                    'Select a date to view appointments'}
+                </p>
+              </div>
             </div>
-            
-            <div className="mt-6 p-4 bg-ds-primary/10 rounded-lg border border-ds-primary/20">
-              <h3 className="font-medium text-ds-primary mb-2">Selected Date</h3>
-              <p className="text-lg">{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'No date selected'}</p>
-              <p className="text-sm mt-2 opacity-80">
-                {selectedDate ? 
-                  `${getDoctorAppointments(selectedDate).length} appointments scheduled` : 
-                  'Select a date to view appointments'}
-              </p>
+
+            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-800">My schedule</h2>
+                <button className="text-indigo-600 text-sm flex items-center">
+                  View all schedule <span className="ml-1">→</span>
+                </button>
+              </div>
+              
+              {getDoctorAppointments(selectedDate || new Date()).slice(0, 3).map((app, index) => (
+                <div key={app.id} className="flex items-center mb-3 p-2 hover:bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                    <span className="text-xs text-indigo-600">{app.patient.substring(0, 2)}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{app.patient}</p>
+                    <p className="text-xs text-gray-500">{format(app.start, 'h:mm a')}</p>
+                  </div>
+                </div>
+              ))}
+              
+              {getDoctorAppointments(selectedDate || new Date()).length === 0 && (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  No appointments for today
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="md:col-span-2 bg-ds-dark/70 p-6 rounded-lg border border-ds-primary/20 shadow-lg">
-            <h2 className="text-xl font-semibold text-ds-primary mb-4">
+          <div className="col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
               Appointments for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Today'}
             </h2>
             
@@ -255,50 +287,55 @@ export default function Appointments() {
                 {getDoctorAppointments(selectedDate || new Date()).map(app => {
                   const patient = getPatientDetails(app.patientId);
                   return (
-                    <div key={app.id} className="p-4 bg-ds-dark/90 rounded-lg border border-ds-primary/10 hover:border-ds-primary/30 transition-all">
+                    <div key={app.id} className="p-4 bg-white rounded-lg border border-gray-100 hover:border-indigo-200 transition-all shadow-sm">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold text-lg">{app.patient}</h3>
-                          <p className="text-sm text-ds-text/70">{app.patientEmail}</p>
-                          
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-3">
-                            <div>
-                              <p className="text-xs text-ds-text/60">Appointment Type</p>
-                              <p className="font-medium">
-                                <span 
-                                  className={`inline-block px-2 py-1 rounded-md text-xs ${
-                                    app.type === 'Consultation' ? 'bg-blue-500/20 text-blue-300' : 
-                                    app.type === 'Checkup' ? 'bg-green-500/20 text-green-300' : 
-                                    'bg-purple-500/20 text-purple-300'
-                                  }`}
-                                >
-                                  {app.type}
-                                </span>
-                              </p>
-                            </div>
+                        <div className="flex">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mr-4">
+                            <span className="text-indigo-600 font-medium">{app.patient.substring(0, 2)}</span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-gray-800">{app.patient}</h3>
+                            <p className="text-sm text-gray-500">{app.patientEmail}</p>
                             
-                            <div>
-                              <p className="text-xs text-ds-text/60">Duration</p>
-                              <p className="font-medium">{appointmentDurations[app.type]} hour{appointmentDurations[app.type] > 1 ? 's' : ''}</p>
-                            </div>
-                            
-                            <div>
-                              <p className="text-xs text-ds-text/60">Time</p>
-                              <p className="font-medium">{format(app.start, 'h:mm a')} - {format(app.end, 'h:mm a')}</p>
-                            </div>
-                            
-                            {patient && (
+                            <div className="grid grid-cols-2 gap-4 mt-3">
                               <div>
-                                <p className="text-xs text-ds-text/60">Patient ID</p>
-                                <p className="font-medium text-sm">{patient.uid.substring(0, 8)}...</p>
+                                <p className="text-xs text-gray-500">Appointment Type</p>
+                                <p className="font-medium text-gray-700">
+                                  <span 
+                                    className={`inline-block px-2 py-1 rounded-md text-xs ${
+                                      app.type === 'Consultation' ? 'bg-blue-100 text-blue-600' : 
+                                      app.type === 'Checkup' ? 'bg-green-100 text-green-600' : 
+                                      'bg-purple-100 text-purple-600'
+                                    }`}
+                                  >
+                                    {app.type}
+                                  </span>
+                                </p>
                               </div>
-                            )}
+                              
+                              <div>
+                                <p className="text-xs text-gray-500">Duration</p>
+                                <p className="font-medium text-gray-700">{appointmentDurations[app.type]} hour{appointmentDurations[app.type] > 1 ? 's' : ''}</p>
+                              </div>
+                              
+                              <div>
+                                <p className="text-xs text-gray-500">Time</p>
+                                <p className="font-medium text-gray-700">{format(app.start, 'h:mm a')} - {format(app.end, 'h:mm a')}</p>
+                              </div>
+                              
+                              {patient && (
+                                <div>
+                                  <p className="text-xs text-gray-500">Patient ID</p>
+                                  <p className="font-medium text-gray-700 text-sm">{patient.uid.substring(0, 8)}...</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
                         <button 
                           onClick={() => handleCancelAppointment(app.id)}
-                          className="px-3 py-1.5 bg-red-900/30 text-red-300 rounded hover:bg-red-900/50 transition-colors text-sm"
+                          className="px-3 py-1.5 border border-red-200 text-red-500 rounded-md hover:bg-red-50 transition-colors text-sm"
                         >
                           Cancel
                         </button>
@@ -308,74 +345,82 @@ export default function Appointments() {
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-8 bg-ds-dark/50 rounded-lg border border-dashed border-ds-primary/20">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-ds-primary/40 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="text-ds-text/60">No appointments scheduled for this date</p>
+              <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500">No appointments scheduled for this date</p>
+                <p className="text-sm text-gray-400 mt-1">Select another date or wait for new bookings</p>
               </div>
             )}
+            
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-800">All Upcoming Appointments</h3>
+              </div>
+              
+              {appointments.length > 0 ? (
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {appointments.sort((a, b) => a.start.getTime() - b.start.getTime()).slice(0, 5).map((app) => (
+                        <tr key={app.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                                <span className="text-xs text-indigo-600">{app.patient.substring(0, 2)}</span>
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-800">{app.patient}</div>
+                                <div className="text-xs text-gray-500">{app.patientEmail}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            {format(app.start, 'MMM d, yyyy')}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            {format(app.start, 'h:mm a')}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full 
+                              ${app.type === 'Consultation' ? 'bg-blue-100 text-blue-600' : 
+                              app.type === 'Checkup' ? 'bg-green-100 text-green-600' : 
+                              'bg-purple-100 text-purple-600'}`}>
+                              {app.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            <button 
+                              onClick={() => handleCancelAppointment(app.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              Cancel
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                  No upcoming appointments scheduled
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        <div className="bg-ds-dark/70 p-6 rounded-lg border border-ds-primary/20 shadow-lg">
-          <h2 className="text-xl font-semibold text-ds-primary mb-4">All Upcoming Appointments</h2>
-          
-          {appointments.length > 0 ? (
-            <div className="overflow-hidden rounded-lg border border-ds-primary/20">
-              <table className="min-w-full divide-y divide-ds-primary/10">
-                <thead className="bg-ds-primary/10">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ds-primary uppercase tracking-wider">Patient</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ds-primary uppercase tracking-wider">Date</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ds-primary uppercase tracking-wider">Time</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ds-primary uppercase tracking-wider">Type</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ds-primary uppercase tracking-wider">Duration</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-ds-primary uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-ds-dark/50 divide-y divide-ds-primary/10">
-                  {appointments.sort((a, b) => a.start.getTime() - b.start.getTime()).map((app) => (
-                    <tr key={app.id} className="hover:bg-ds-primary/5">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium">{app.patient}</div>
-                        <div className="text-xs text-ds-text/60">{app.patientEmail}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {format(app.start, 'MMM d, yyyy')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {format(app.start, 'h:mm a')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${app.type === 'Consultation' ? 'bg-blue-900/30 text-blue-300' : 
-                          app.type === 'Checkup' ? 'bg-green-900/30 text-green-300' : 
-                          'bg-purple-900/30 text-purple-300'}`}>
-                          {app.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {appointmentDurations[app.type]} hour{appointmentDurations[app.type] > 1 ? 's' : ''}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button 
-                          onClick={() => handleCancelAppointment(app.id)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          Cancel
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-10 text-ds-text/60">
-              No upcoming appointments scheduled
-            </div>
-          )}
         </div>
       </div>
     </div>
