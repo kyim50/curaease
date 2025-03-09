@@ -107,7 +107,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link 
-            href="/doctorsappointments" 
+            href="/doctors-appointments" 
             className="bg-[#00A676] border border-ds-primary/20 rounded-lg p-6 hover:border-ds-primary transition-all hover:scale-[1.02]"
           >
             <h3 className="text-xl font-semibold text-white mb-2">Your Appointments</h3>

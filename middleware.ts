@@ -16,6 +16,7 @@ export function middleware(request: NextRequest) {
     path === '/medications' ||
     path === '/profile' ||
     path == '/doctors-dashboard' ||
+    path == '/doctors-appointments' ||
     path === '/account-security';
   
   // Get the authentication token from cookies
