@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useAuth } from "@/app/auth-context";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { logOut } from "@/lib/firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
@@ -11,6 +11,7 @@ export default function Nav() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const db = getFirestore();
 
   useEffect(() => {
@@ -44,36 +45,40 @@ export default function Nav() {
     }
   };
 
+  const isActive = (path: string) => {
+    return pathname === path;
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 h-full flex flex-col">
       {/* Logo at the top */}
       <div className="mb-8 text-center">
-        <Link href="/dashboard" className="text-xl font-bold text-indigo-700 hover:text-indigo-800 transition-colors duration-300">
+        <Link href="/dashboard" className="text-xl font-bold text-[#00A676] hover:text-[#008d63] transition-colors duration-300">
           CuraEase
         </Link>
       </div>
 
       {/* Navigation Menu */}
       <div className="flex-grow mb-8">
-        <h2 className="text-lg font-semibold text-indigo-800 mb-4">Menu</h2>
+        <h2 className="text-lg font-semibold text-[#00A676] mb-4">Menu</h2>
         <div className="space-y-3">
-          <Link href="/dashboard" className="flex items-center px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg">
+          <Link href="/dashboard" className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${isActive('/dashboard') ? 'text-[#00A676] bg-[#e6f7f1]' : 'text-gray-600 hover:bg-[#e6f7f1]'}`}>
             <span className="w-5 h-5 mr-2">🏠</span>
             Dashboard
           </Link>
-          <Link href="/appointments" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+          <Link href="/appointments" className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${isActive('/appointments') ? 'text-[#00A676] bg-[#e6f7f1]' : 'text-gray-600 hover:bg-[#e6f7f1]'}`}>
             <span className="w-5 h-5 mr-2">📅</span>
             Appointments
           </Link>
-          <Link href="/symptom-checker" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+          <Link href="/symptom-checker" className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${isActive('/symptom-checker') ? 'text-[#00A676] bg-[#e6f7f1]' : 'text-gray-600 hover:bg-[#e6f7f1]'}`}>
             <span className="w-5 h-5 mr-2">🔍</span>
             Symptom Checker
           </Link>
-          <Link href="/health-info" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+          <Link href="/health-info" className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${isActive('/health-info') ? 'text-[#00A676] bg-[#e6f7f1]' : 'text-gray-600 hover:bg-[#e6f7f1]'}`}>
             <span className="w-5 h-5 mr-2">📊</span>
             Health Info
           </Link>
-          <Link href="/medications" className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:bg-indigo-50 rounded-lg">
+          <Link href="/medications" className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg ${isActive('/medications') ? 'text-[#00A676] bg-[#e6f7f1]' : 'text-gray-600 hover:bg-[#e6f7f1]'}`}>
             <span className="w-5 h-5 mr-2">💊</span>
             Medications
           </Link>
@@ -94,7 +99,7 @@ export default function Nav() {
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+              <div className="w-8 h-8 rounded-full bg-[#e6f7f1] flex items-center justify-center text-[#00A676] font-bold">
                 {user.displayName ? user.displayName[0].toUpperCase() : 'U'}
               </div>
             )}
@@ -118,7 +123,7 @@ export default function Nav() {
             <div className="mt-2 bg-white rounded-lg shadow-inner border p-2 z-50">
               <Link 
                 href="/profile" 
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#e6f7f1] rounded-md"
               >
                 Profile
               </Link>
