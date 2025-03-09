@@ -37,3 +37,10 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 making first branch commit
+
+if you mess up your commit or merge.
+
+git reset --hard HEAD~1
+git push origin --force
+
+is used to delete the commit from the repository.
