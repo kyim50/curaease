@@ -93,7 +93,7 @@ export default function Login() {
       if (isDoctor) {
         router.push("/doctors-dashboard");
       } else {
-        router.push("/dashboard");
+        router.push("/dashboard"); 
       }
       
     } catch (error: any) {
