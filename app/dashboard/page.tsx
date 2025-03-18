@@ -1,17 +1,16 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-context";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import Nav from "../components/nav"; // Import the Nav component
 
 export default function Home() {
-  const router = useRouter();
   const { user } = useAuth();
-  const [profileImage, setProfileImage] = useState(null);
   const db = getFirestore();
+
+  // We'll actually use the profileImage in the UI now
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfileImage = async () => {
@@ -37,7 +36,6 @@ export default function Home() {
 
   // Current month data
   const currentDate = new Date();
-  const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
   const currentYear = currentDate.getFullYear();
   
   // Get days in current month for calendar
@@ -52,6 +50,12 @@ export default function Home() {
   for (let i = 1; i <= daysInMonth; i++) {
     calendarDays.push(i);
   }
+
+  // Format date to display the current month and year
+  const formattedDate = new Intl.DateTimeFormat('en-US', { 
+    month: 'long', 
+    year: 'numeric' 
+  }).format(currentDate);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -148,11 +152,28 @@ export default function Home() {
 
         {/* Right Sidebar */}
         <div className="col-span-3 space-y-6 p-6">
+          {/* User Profile */}
+          {profileImage && (
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <div className="flex items-center">
+                <img 
+                  src={profileImage} 
+                  alt="User profile" 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="ml-3">
+                  <p className="text-sm font-medium">{user?.displayName || 'User'}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Calendar */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center">
-                <h3 className="text-base font-medium text-gray-800">July 2023</h3>
+                <h3 className="text-base font-medium text-gray-800">{formattedDate}</h3>
               </div>
               <div className="flex space-x-2">
                 <button className="p-1 text-gray-400 hover:text-gray-800">

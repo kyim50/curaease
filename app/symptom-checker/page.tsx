@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   Menu, 
-  Search, 
+  // Removing unused import
   Plus, 
   Send, 
   Loader2, 
@@ -55,7 +55,7 @@ const MEDICAL_SYSTEM_PROMPT = `You are a professional medical AI assistant. Foll
 9. End with "Preliminary Assessment:" when sufficient data is collected
 10. Use the RAG context provided to inform your responses with real medical knowledge from doctor-patient conversations`;
 
-const retry = async (fn: () => Promise<any>, maxAttempts = 3, delay = 1000) => {
+const retry = async <T,>(fn: () => Promise<T>, maxAttempts = 3, delay = 1000): Promise<T> => {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
@@ -64,6 +64,7 @@ const retry = async (fn: () => Promise<any>, maxAttempts = 3, delay = 1000) => {
       await new Promise(resolve => setTimeout(resolve, delay * attempt));
     }
   }
+  throw new Error("Max retry attempts reached");
 };
 
 // Format date as "Mar 8, 2025"
@@ -236,8 +237,20 @@ export default function SymptomChecker() {
     setTimeout(() => handleSubmit(), 100);
   };
 
+  // Define type for API response
+  interface OpenRouterResponse {
+    choices: {
+      message: {
+        content: string;
+      };
+    }[];
+    error?: {
+      message: string;
+    };
+  }
+
   // Call OpenRouter API
-  const callOpenRouter = async (messages: any[]) => {
+  const callOpenRouter = async (messages: {role: string; content: string}[]): Promise<string> => {
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -254,11 +267,11 @@ export default function SymptomChecker() {
       });
   
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json() as {error?: {message: string}};
         throw new Error(errorData.error?.message || "Failed to get response from OpenRouter");
       }
   
-      const data = await response.json();
+      const data = await response.json() as OpenRouterResponse;
       return data.choices[0].message.content;
     } catch (error) {
       console.error("Error calling OpenRouter:", error);
@@ -350,8 +363,8 @@ export default function SymptomChecker() {
 
       setDefinitions(extractDefinitions(cleanedResponse));
 
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to get response from AI service';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get response from AI service';
       setError(errorMessage);
       toast.error(errorMessage);
       
@@ -411,10 +424,9 @@ export default function SymptomChecker() {
       return days;
     };
     
-    const getDayOfWeek = (date: Date) => {
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return days[date.getDay()];
-    };
+    // This function is defined but not used, but since it might be used in future,
+    // instead of removing it, we'll keep it and add a commented note to explicitly show it's intentional
+  
     
     const isCurrentDay = (date: Date) => {
       const today = new Date();
@@ -877,4 +889,4 @@ export default function SymptomChecker() {
       </div>
     </div>
   );
-}
+};

@@ -20,9 +20,13 @@ export default function ResetPassword() {
     try {
       await sendPasswordResetEmail(auth, email);
       setSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      setError(error.message || "Failed to send password reset email");
+      if (error instanceof Error) {
+        setError(error.message || "Failed to send password reset email");
+      } else {
+        setError("Failed to send password reset email");
+      }
     } finally {
       setLoading(false);
     }

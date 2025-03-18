@@ -257,7 +257,7 @@ export default function Appointments() {
                 </button>
               </div>
               
-              {getDoctorAppointments(selectedDate || new Date()).slice(0, 3).map((app, index) => (
+              {getDoctorAppointments(selectedDate || new Date()).slice(0, 3).map((app) => (
                 <div key={app.id} className="flex items-center mb-3 p-2 hover:bg-gray-50 rounded-lg">
                   <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
                     <span className="text-xs text-indigo-600">{app.patient.substring(0, 2)}</span>

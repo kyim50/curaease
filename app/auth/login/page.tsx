@@ -2,13 +2,12 @@
 import Link from "next/link";
 import { LandingNav } from "@/app/components/LandingNav";
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, AuthError } from "firebase/auth";
 import { auth } from "@/app/firebase";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/auth-context";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore"; // Import Firestore functions
 import { db } from "@/app/firebase"; // Import db from your firebase config
+import { EyeOffIcon , EyeIcon } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,7 +16,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
   
   // Function to check if user is a doctor
   const checkIfDoctor = async (uid: string) => {
@@ -51,25 +49,30 @@ export default function Login() {
         router.push("/dashboard");
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       
       // More specific error handling
-      switch (error.code) {
-        case 'auth/invalid-credential':
-          setError("Invalid email or password. Please check and try again.");
-          break;
-        case 'auth/user-not-found':
-          setError("No account found with this email. Please sign up.");
-          break;
-        case 'auth/wrong-password':
-          setError("Incorrect password. Please try again.");
-          break;
-        case 'auth/too-many-requests':
-          setError("Too many login attempts. Please try again later.");
-          break;
-        default:
-          setError("An unexpected error occurred. Please try again.");
+      if (error instanceof Error) {
+        const firebaseError = error as AuthError;
+        switch (firebaseError.code) {
+          case 'auth/invalid-credential':
+            setError("Invalid email or password. Please check and try again.");
+            break;
+          case 'auth/user-not-found':
+            setError("No account found with this email. Please sign up.");
+            break;
+          case 'auth/wrong-password':
+            setError("Incorrect password. Please try again.");
+            break;
+          case 'auth/too-many-requests':
+            setError("Too many login attempts. Please try again later.");
+            break;
+          default:
+            setError("An unexpected error occurred. Please try again.");
+        }
+      } else {
+        setError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -96,9 +99,13 @@ export default function Login() {
         router.push("/dashboard"); 
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google login error:", error);
-      setError(error.message || "Failed to sign in with Google");
+      if (error instanceof Error) {
+        setError(error.message || "Failed to sign in with Google");
+      } else {
+        setError("Failed to sign in with Google");
+      }
     } finally {
       setLoading(false);
     }

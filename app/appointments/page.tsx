@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Calendar } from '../components/ui/calendar';
-import { addHours, setHours, setMinutes, areIntervalsOverlapping, format, parse } from 'date-fns';
+// Remove unused Calendar import
+import { addHours, setHours, setMinutes, areIntervalsOverlapping, format } from 'date-fns';
+// Remove unused parse import
 import Nav from '../components/nav';
 import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -48,7 +49,7 @@ export default function Appointments() {
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<'Consultation' | 'Checkup' | 'Specialization'>('Consultation');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  // Remove unused isDropdownOpen state or use it where needed
   
   // Authentication & data fetching effects remain unchanged
   useEffect(() => {
@@ -319,10 +320,7 @@ export default function Appointments() {
     setSelectedDate(newDate);
   };
 
-  const handleDoctorSelect = (doctor: Doctor) => {
-    setSelectedDoctorId(doctor.uid);
-    setIsDropdownOpen(false);
-  };
+  // Remove unused handleDoctorSelect function or use it where needed
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading doctors and appointments...</div>;

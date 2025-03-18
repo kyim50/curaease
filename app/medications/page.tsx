@@ -22,19 +22,31 @@ interface Medication {
 interface SearchResult {
   name: string;
   rxcui: string;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+// Define an interface for RxNav API candidate response
+interface RxNavCandidate {
+  name: string;
+  rxcui: string;
+  score?: number;
+  [key: string]: unknown;
 }
 
 const MedicationDashboard = () => {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [newMed, setNewMed] = useState<Medication>({ name: '', dosage: '', time: '', frequency: 'daily' });
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  // Track loading state for search functionality
   const [isSearching, setIsSearching] = useState(false);
+  
+  // Add loading indicator UI when isSearching is true
+  
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedColor, setSelectedColor] = useState('cyan');
-  const [userName, setUserName] = useState('User');
+  const [userName] = useState('User');
   
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -84,7 +96,7 @@ const MedicationDashboard = () => {
         setSuggestions([]);
       } else {
         const medicationNames = results
-          .map((med: any) => med.name?.trim() as string)
+          .map((med: RxNavCandidate) => med.name?.trim() as string)
           .filter((name: string) => name);
 
         const normalizedNames = medicationNames.map((name: string) => name.toLowerCase());
@@ -108,6 +120,12 @@ const MedicationDashboard = () => {
     }
   };
 
+  // Define ingredient interface for API response
+  interface IngredientProperty {
+    name: string;
+    [key: string]: unknown;
+  }
+
   // Fetch detailed information for a medication using RxNorm RXCUI
   const fetchMedicationDetails = async (rxcui: string) => {
     try {
@@ -116,7 +134,7 @@ const MedicationDashboard = () => {
 
       const ingredientsResponse = await axios.get(`https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/related.json?tty=IN`);
       const ingredients = ingredientsResponse.data.relatedGroup?.conceptGroup?.[0]?.conceptProperties?.map(
-        (ingredient: any) => ingredient.name
+        (ingredient: IngredientProperty) => ingredient.name
       ) || [];
 
       return {
@@ -214,7 +232,7 @@ const MedicationDashboard = () => {
         hour: '2-digit', 
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return timeString;
     }
   };
@@ -367,9 +385,11 @@ const MedicationDashboard = () => {
                   className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A676]"
                   required
                 />
-                {(suggestions.length > 0 || searchError) && (
+                {(suggestions.length > 0 || searchError || isSearching) && (
                   <div className="absolute z-10 bg-white border border-gray-300 mt-1 w-full rounded-lg shadow-lg">
-                    {suggestions.length > 0 ? (
+                    {isSearching ? (
+                      <div className="p-3 text-gray-500">Searching medications...</div>
+                    ) : suggestions.length > 0 ? (
                       suggestions.map((suggestion, index) => (
                         <div
                           key={index}

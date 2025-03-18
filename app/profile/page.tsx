@@ -11,7 +11,6 @@ import {
   getDoc 
 } from 'firebase/firestore';
 import { ChevronLeft, Camera } from 'lucide-react';
-import { auth } from '../firebase';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();

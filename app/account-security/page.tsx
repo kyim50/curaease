@@ -5,7 +5,8 @@ import {
   reauthenticateWithCredential, 
   updatePassword, 
   deleteUser,
-  EmailAuthProvider 
+  EmailAuthProvider,
+  AuthError 
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Lock, Trash2, Shield } from 'lucide-react';
@@ -58,9 +59,10 @@ const AccountSecurityPage: React.FC = () => {
       setConfirmNewPassword('');
 
       alert('Password updated successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password update error:', error);
-      setPasswordError(error.message || 'Failed to update password');
+      const authError = error as AuthError;
+      setPasswordError(authError.message || 'Failed to update password');
     }
   };
 
@@ -89,9 +91,10 @@ const AccountSecurityPage: React.FC = () => {
 
       // Redirect to home or login page
       router.push('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Account deletion error:', error);
-      setDeleteError(error.message || 'Failed to delete account');
+      const authError = error as AuthError;
+      setDeleteError(authError.message || 'Failed to delete account');
     }
   };
 

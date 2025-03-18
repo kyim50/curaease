@@ -3,9 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { 
   User, 
   onAuthStateChanged, 
-  signOut as firebaseSignOut,
-  setPersistence,
-  browserLocalPersistence
+  signOut as firebaseSignOut
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { useRouter, usePathname } from "next/navigation";

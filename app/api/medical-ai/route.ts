@@ -29,7 +29,7 @@ async function checkRateLimit(identifier: string): Promise<{ allowed: boolean, r
   }
 
   // Increment the count
-  const incrResponse = await fetch(`${UPSTASH_REDIS_REST_URL}/incr/${key}`, {
+  await fetch(`${UPSTASH_REDIS_REST_URL}/incr/${key}`, {
     headers: {
       Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
     },
@@ -100,10 +100,11 @@ export async function POST(req: Request) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Server Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

@@ -56,9 +56,13 @@ export default function SignUp() {
       });
       
       router.push("/login"); // Redirect to dashboard after successful signup
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      setError(error.message || "Failed to create account");
+      if (error instanceof Error) {
+        setError(error.message || "Failed to create account");
+      } else {
+        setError("Failed to create account");
+      }
     } finally {
       setLoading(false);
     }
@@ -95,9 +99,13 @@ export default function SignUp() {
       });
       
       router.push("/login"); 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      setError(error.message || "Failed to sign up with Google");
+      if (error instanceof Error) {
+        setError(error.message || "Failed to sign up with Google");
+      } else {
+        setError("Failed to sign up with Google");
+      }
     } finally {
       setLoading(false);
     }

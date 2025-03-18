@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth-context";
 import { logOut } from "@/lib/firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Calendar, Clock, User, Bell, LogOut, Menu, Pill, Activity, FileText, Search } from "lucide-react";
+import { Calendar, Clock, Bell, Menu, Pill, Activity, FileText, Search } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -14,8 +14,7 @@ export default function Home() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const db = getFirestore();
-  const [currentMonth, setCurrentMonth] = useState("July 2025");
-  const [selectedDate, setSelectedDate] = useState(15);
+  const selectedDate = 15;
   
   // Calendar data (simplified)
   const days = ["M", "T", "W", "T", "F", "S", "S"];
