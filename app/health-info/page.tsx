@@ -195,9 +195,9 @@ export default function HealthInfo() {
 
     // Mock nearby hospitals (in a real app, you'd fetch this data)
     const hospitals = [
-      { name: "General Hospital", coords: [userLocation.lng + 0.01, userLocation.lat + 0.008] },
-      { name: "St. Mary's Hospital", coords: [userLocation.lng - 0.015, userLocation.lat - 0.005] },
-      { name: "Children's Medical Center", coords: [userLocation.lng + 0.02, userLocation.lat - 0.01] }
+      { name: "General Hospital", coords: [userLocation.lng + 0.01, userLocation.lat + 0.008] as [number, number] },
+      { name: "St. Mary's Hospital", coords: [userLocation.lng - 0.015, userLocation.lat - 0.005] as [number, number] },
+      { name: "Children's Medical Center", coords: [userLocation.lng + 0.02, userLocation.lat - 0.01] as [number, number] }
     ];
 
     // Add hospital markers
@@ -576,4 +576,4 @@ export default function HealthInfo() {
       </footer>
     </div>
   );
-}
+};
