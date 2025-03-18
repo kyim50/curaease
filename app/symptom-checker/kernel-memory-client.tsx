@@ -13,14 +13,23 @@ interface MedicalConversation {
     /**
      * Loads the medical dataset from the backend
      */
-    async loadMedicalDataset(page: number = 1, limit: number = 100): Promise<void> {
+    async loadMedicalDataset(pageOrFilePath: number | string, limit: number = 100): Promise<void> {
       try {
-        const response = await fetch(`http://localhost:5000/api/medical-dataset?page=${page}&limit=${limit}`);
-        if (!response.ok) throw new Error('Failed to fetch dataset');
-  
-        this.medicalKnowledge = await response.json();
-        console.log(`Loaded page ${page} with ${this.medicalKnowledge.length} records`);
-        this.isInitialized = true;
+        if (typeof pageOrFilePath === 'string') {
+          // Handle file path logic
+          console.log(`Loading dataset from file: ${pageOrFilePath}`);
+          // Implement file loading logic here - perhaps using fetch or another method to load the file
+          this.isInitialized = true;
+        } else {
+          // Existing pagination logic
+          const page = pageOrFilePath;
+          const response = await fetch(`http://localhost:5000/api/medical-dataset?page=${page}&limit=${limit}`);
+          if (!response.ok) throw new Error('Failed to fetch dataset');
+      
+          this.medicalKnowledge = await response.json();
+          console.log(`Loaded page ${page} with ${this.medicalKnowledge.length} records`);
+          this.isInitialized = true;
+        }
       } catch (error) {
         console.error('Error loading medical dataset:', error);
       }

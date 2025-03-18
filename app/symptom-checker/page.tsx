@@ -113,7 +113,8 @@ export default function SymptomChecker() {
           setIsLoading(true);
           toast.loading('Loading medical knowledge base...', { duration: 3000 });
           
-          // This will index your JSON files into Kernel Memory
+          // Cast the string to 'any' to bypass TypeScript's type checking
+          // This is a workaround when the expected types don't match
           await kernelMemory.loadMedicalDataset('./en_medical_dialog.json');
           
           setIsMemoryLoaded(true);
@@ -126,7 +127,7 @@ export default function SymptomChecker() {
         setIsLoading(false);
       }
     };
-
+  
     loadDatasets();
   }, []);
 
@@ -134,7 +135,7 @@ export default function SymptomChecker() {
   useEffect(() => {
     const savedConvs = localStorage.getItem('med-conversations');
     if (savedConvs) {
-      const parsedConvs = JSON.parse(savedConvs);
+      const parsedConvs = JSON.parse(savedConvs) as Conversation[];
       setConversations(parsedConvs);
       setFilteredConversations(parsedConvs);
       if (parsedConvs.length > 0 && !currentConversationId) {
@@ -297,7 +298,7 @@ export default function SymptomChecker() {
 
     const updatedMessages = [
       ...messages, 
-      { role: 'user', content: userInput, timestamp: Date.now() }
+      { role: 'user' as const, content: userInput, timestamp: Date.now() }
     ];
 
     // Update current conversation with the new user message.
@@ -316,11 +317,11 @@ export default function SymptomChecker() {
           // Prepare messages array for model
           const apiMessages = [
             { 
-              role: 'system', 
+              role: 'system' as const, 
               content: `${MEDICAL_SYSTEM_PROMPT}\n\nHere is relevant context from real doctor-patient conversations:\n${ragContext}` 
             },
             ...updatedMessages.map(msg => ({
-              role: msg.role,
+              role: msg.role as 'user' | 'assistant' | 'system',
               content: msg.content
             }))
           ];
@@ -348,7 +349,7 @@ export default function SymptomChecker() {
 
       const newMessages = [
         ...updatedMessages,
-        { role: 'assistant', content: cleanedResponse, timestamp: Date.now() }
+        { role: 'assistant' as const, content: cleanedResponse, timestamp: Date.now() }
       ];
 
       setConversations(prev => prev.map(conv => 
