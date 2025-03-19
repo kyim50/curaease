@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
+// Remove unused Calendar import
 import { addHours, setHours, setMinutes, areIntervalsOverlapping, format } from 'date-fns';
+// Remove unused parse import
 import Nav from '../components/nav';
 import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -47,8 +49,7 @@ export default function Appointments() {
   const [selectedAppointmentType, setSelectedAppointmentType] = useState<'Consultation' | 'Checkup' | 'Specialization'>('Consultation');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'doctors' | 'calendar' | 'appointments'>('doctors');
+  // Remove unused isDropdownOpen state or use it where needed
   
   // Authentication & data fetching effects remain unchanged
   useEffect(() => {
@@ -319,9 +320,7 @@ export default function Appointments() {
     setSelectedDate(newDate);
   };
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  // Remove unused handleDoctorSelect function or use it where needed
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading doctors and appointments...</div>;
@@ -331,295 +330,23 @@ export default function Appointments() {
   const currentMonth = selectedDate ? format(selectedDate, 'MMMM yyyy') : format(new Date(), 'MMMM yyyy');
   const selectedDay = selectedDate ? selectedDate.getDate() : null;
 
-  // Mobile navigation tabs
-  const renderMobileTabs = () => (
-    <div className="flex border-b border-gray-200 mb-4 md:hidden">
-      <button
-        className={`flex-1 py-2 text-sm font-medium ${activeTab === 'doctors' ? 'text-[#00A676] border-b-2 border-[#00A676]' : 'text-gray-500'}`}
-        onClick={() => setActiveTab('doctors')}
-      >
-        Doctors
-      </button>
-      <button
-        className={`flex-1 py-2 text-sm font-medium ${activeTab === 'calendar' ? 'text-[#00A676] border-b-2 border-[#00A676]' : 'text-gray-500'}`}
-        onClick={() => setActiveTab('calendar')}
-      >
-        Calendar
-      </button>
-      <button
-        className={`flex-1 py-2 text-sm font-medium ${activeTab === 'appointments' ? 'text-[#00A676] border-b-2 border-[#00A676]' : 'text-gray-500'}`}
-        onClick={() => setActiveTab('appointments')}
-      >
-        My Appointments
-      </button>
-    </div>
-  );
-
-  // Doctor selection section
-  const renderDoctorSelection = () => (
-    <div className={`${(activeTab === 'doctors' || !activeTab) ? 'block' : 'hidden md:block'} md:col-span-3`}>
-      <h2 className="text-md font-medium text-gray-900 mb-3">Select a Doctor</h2>
-      
-      {/* Doctor search input */}
-      <div className="mb-3">
-        <input
-          type="text"
-          placeholder="Search doctors..."
-          className="w-full p-2 text-sm border border-gray-200 rounded-md"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      
-      {/* Doctor list */}
-      <div className="bg-white border border-gray-200 rounded-lg h-60 overflow-y-auto">
-        {filteredDoctors.length > 0 ? (
-          filteredDoctors.map(doctor => (
-            <div
-              key={doctor.uid}
-              className={`p-3 cursor-pointer hover:bg-gray-50 flex items-center border-b border-gray-100 ${selectedDoctorId === doctor.uid ? 'bg-green-50 border-l-4 border-l-[#00A676]' : ''}`}
-              onClick={() => {
-                setSelectedDoctorId(doctor.uid);
-                if (window.innerWidth < 768) {
-                  setActiveTab('calendar');
-                }
-              }}
-            >
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[#00A676] font-medium mr-2 text-xs">
-                {doctor.firstName.charAt(0)}{doctor.lastName.charAt(0)}
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-gray-900">Dr. {doctor.firstName} {doctor.lastName}</h3>
-                <p className="text-xs text-gray-500">{doctor.specialty}</p>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="p-3 text-center text-gray-500 text-sm">
-            No doctors found
-          </div>
-        )}
-      </div>
-      
-      <h2 className="text-md font-medium text-gray-900 mt-6 mb-3">My Consultations</h2>
-      
-      {/* Consultation types */}
-      <div className="grid grid-cols-3 gap-2 mb-2">
-        {/* Card 1 */}
-        <div 
-          className={`${selectedAppointmentType === 'Consultation' ? 'bg-[#00A676]' : 'bg-green-50'} rounded-xl p-2 cursor-pointer flex flex-col items-center justify-center h-24 ${selectedAppointmentType === 'Consultation' ? 'ring-2 ring-[#00A676]' : ''}`}
-          onClick={() => setSelectedAppointmentType('Consultation')}
-        >
-          <div className="flex items-center justify-center">
-            <img 
-              src="/img/consultation.svg" 
-              alt="Consultation" 
-              className="w-8 h-8" 
-            />
-          </div>
-          <div className="text-center mt-2">
-            <h3 className={`${selectedAppointmentType === 'Consultation' ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>Consultation</h3>
-            <p className={`${selectedAppointmentType === 'Consultation' ? 'text-green-200' : 'text-gray-500'} text-xs`}>1h</p>
-          </div>
-        </div>
-        
-        {/* Card 2 */}
-        <div 
-          className={`${selectedAppointmentType === 'Checkup' ? 'bg-[#00A676]' : 'bg-green-50'} rounded-xl p-2 cursor-pointer flex flex-col items-center justify-center h-24 ${selectedAppointmentType === 'Checkup' ? 'ring-2 ring-[#00A676]' : ''}`}
-          onClick={() => setSelectedAppointmentType('Checkup')}
-        >
-          <div className="flex items-center justify-center">
-            <img 
-              src="/img/checkup.svg" 
-              alt="Checkup" 
-              className="w-8 h-8" 
-            />
-          </div>
-          <div className="text-center mt-2">
-            <h3 className={`${selectedAppointmentType === 'Checkup' ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>Checkup</h3>
-            <p className={`${selectedAppointmentType === 'Checkup' ? 'text-green-200' : 'text-gray-500'} text-xs`}>2h</p>
-          </div>
-        </div>
-        
-        {/* Card 3 */}
-        <div 
-          className={`${selectedAppointmentType === 'Specialization' ? 'bg-[#00A676]' : 'bg-green-50'} rounded-xl p-2 cursor-pointer flex flex-col items-center justify-center h-24 ${selectedAppointmentType === 'Specialization' ? 'ring-2 ring-[#00A676]' : ''}`}
-          onClick={() => setSelectedAppointmentType('Specialization')}
-        >
-          <div className="flex items-center justify-center">
-            <img 
-              src="/img/specialist.svg" 
-              alt="Specialization" 
-              className="w-8 h-8" 
-            />
-          </div>
-          <div className="text-center mt-2">
-            <h3 className={`${selectedAppointmentType === 'Specialization' ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>Specialist</h3>
-            <p className={`${selectedAppointmentType === 'Specialization' ? 'text-green-200' : 'text-gray-500'} text-xs`}>3h</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Calendar section
-  const renderCalendar = () => (
-    <div className={`${activeTab === 'calendar' ? 'block' : 'hidden md:block'} md:col-span-9`}>
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-md font-medium text-gray-900">{currentMonth}</h2>
-        <div className="flex space-x-1">
-          <button 
-            className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
-            onClick={handlePreviousMonth}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <button 
-            className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
-            onClick={handleNextMonth}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        {/* Calendar header */}
-        <div className="grid grid-cols-7 text-center border-b border-gray-200">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-            <div key={i} className="py-1 text-xs font-medium text-gray-600">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        {/* Calendar days */}
-        <div className="grid grid-cols-7 text-center">
-          {calendarDays.map((day, i) => (
-            <div 
-              key={i} 
-              className={`py-2 ${i < calendarDays.length - 7 ? 'border-b border-gray-200' : ''} ${
-                day ? 'cursor-pointer hover:bg-gray-50' : ''
-              } ${
-                day === selectedDay ? 'bg-[#00A676]' : day ? 'bg-white' : 'bg-gray-50'
-              }`}
-              onClick={() => day && handleDateSelection(day)}
-            >
-              {day && (
-                <span className={`text-xs ${
-                  day === selectedDay ? 'text-white font-medium' : 'text-gray-900'
-                }`}>
-                  {day}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="mt-4">
-        <button 
-          onClick={handleBookAppointment}
-          className="w-full bg-[#00A676] text-white text-sm font-medium py-2 px-3 rounded-md hover:bg-[#008d64]"
-          disabled={!currentUser || !selectedDoctorId || !selectedDate}
-        >
-          Book Appointment
-        </button>
-      </div>
-    </div>
-  );
-
-  // Upcoming appointments section
-  const renderUpcomingAppointments = () => (
-    <div className={`${activeTab === 'appointments' ? 'block' : 'hidden md:block'} md:col-span-2 md:border-r md:border-gray-200 md:p-4`}>
-      <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-3">Upcoming Appointments</h3>
-        
-        <div className="space-y-3">
-          {getUserAppointments().length > 0 ? (
-            getUserAppointments().map(app => (
-              <div key={app.id} className="bg-white p-3 rounded-lg shadow border border-gray-100 text-xs flex flex-col justify-between">
-                <div>
-                  <h4 className="font-medium text-gray-900">{getDoctorFullName(app.doctor)}</h4>
-                  <p className="text-gray-500">{format(app.start, 'MMM d, h:mm a')}</p>
-                  <p className="text-gray-500">{app.type}</p>
-                </div>
-                <button 
-                  onClick={() => handleCancel(app.id)}
-                  className="mt-2 bg-red-500 text-white py-1 px-2 rounded text-xs hover:bg-red-600 transition-colors w-full text-center"
-                >
-                  Cancel
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">No upcoming appointments</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Mobile menu button */}
-      <div className="fixed top-0 left-0 z-50 md:hidden">
-        <button 
-          onClick={toggleMobileMenu} 
-          className="p-4 text-gray-600"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Nav sidebar - hidden on mobile unless toggled */}
-      <div className={`fixed h-full transition-transform transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 z-40`}>
+      {/* Nav sidebar */}
+      <div className="fixed h-full">
         <Nav />
       </div>
       
-      {/* Mobile menu backdrop */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-          onClick={toggleMobileMenu}
-        ></div>
-      )}
-      
-      {/* Main content */}
-      <div className="md:ml-16 p-4 max-w-full">
+      {/* Main content - taking up required width */}
+      <div className="ml-16 p-4 max-w-full">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-          
-          {/* User profile for mobile */}
-          <div className="md:hidden flex items-center space-x-2">
-            <div className="rounded-full bg-green-100 p-1">
-              <div className="w-6 h-6 rounded-full bg-[#00A676] text-white flex items-center justify-center">
-                {currentUser?.firstName?.charAt(0) || 'U'}
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800 text-sm">
-                {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Guest'}
-              </h3>
-            </div>
-          </div>
         </div>
         
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          {/* Mobile tabs */}
-          {renderMobileTabs()}
-          
-          <div className="md:grid md:grid-cols-12 md:gap-0">
-            {/* User profile section - hidden on mobile, visible on desktop */}
-            <div className="hidden md:block md:col-span-2 md:border-r md:border-gray-200 md:p-4">
+          <div className="grid grid-cols-12 gap-0">
+            {/* Sidebar - now with upcoming appointments */}
+            <div className="col-span-2 border-r border-gray-200 p-4">
               <div className="flex items-center space-x-2 mb-6">
                 <div className="rounded-full bg-green-100 p-1">
                   <div className="w-6 h-6 rounded-full bg-[#00A676] text-white flex items-center justify-center">
@@ -636,26 +363,205 @@ export default function Appointments() {
                 </div>
               </div>
               
-              {/* Upcoming appointments on desktop */}
-              {renderUpcomingAppointments()}
-            </div>
-            
-            {/* Main content area */}
-            <div className="p-4 md:col-span-10">
-              <div className="md:grid md:grid-cols-12 md:gap-4">
-                {/* Doctor selection on the left for desktop and mobile (when active) */}
-                {renderDoctorSelection()}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Upcoming Appointments</h3>
                 
-                {/* Calendar on the right for desktop and mobile (when active) */}
-                {renderCalendar()}
-                
-                {/* Mobile-only upcoming appointments tab */}
-                <div className="md:hidden">
-                  {activeTab === 'appointments' && (
-                    <div>
-                      {renderUpcomingAppointments()}
+                <div className="space-y-3">
+                  {getUserAppointments().length > 0 ? (
+                    getUserAppointments().slice(0, 5).map(app => (
+                      <div key={app.id} className="bg-white p-3 rounded-lg shadow border border-gray-100 text-xs flex flex-col justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{getDoctorFullName(app.doctor)}</h4>
+                          <p className="text-gray-500">{format(app.start, 'MMM d, h:mm a')}</p>
+                          <p className="text-gray-500">{app.type}</p>
+                        </div>
+                        <button 
+                          onClick={() => handleCancel(app.id)}
+                          className="mt-2 bg-red-500 text-white py-1 px-2 rounded text-xs hover:bg-red-600 transition-colors w-full text-center"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500">No upcoming appointments</p>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Main content */}
+            <div className="col-span-10 p-4">
+              <div className="grid grid-cols-12 gap-4">
+                {/* Doctor selection column on the left */}
+                <div className="col-span-3">
+                  <h2 className="text-md font-medium text-gray-900 mb-3">Select a Doctor</h2>
+                  
+                  {/* Doctor search input */}
+                  <div className="mb-3">
+                    <input
+                      type="text"
+                      placeholder="Search doctors..."
+                      className="w-full p-2 text-sm border border-gray-200 rounded-md"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  
+                  {/* Doctor list - limited to 5 doctors */}
+                  <div className="bg-white border border-gray-200 rounded-lg h-60 overflow-y-auto">
+                    {filteredDoctors.length > 0 ? (
+                      filteredDoctors.map(doctor => (
+                        <div
+                          key={doctor.uid}
+                          className={`p-3 cursor-pointer hover:bg-gray-50 flex items-center border-b border-gray-100 ${selectedDoctorId === doctor.uid ? 'bg-green-50 border-l-4 border-l-[#00A676]' : ''}`}
+                          onClick={() => setSelectedDoctorId(doctor.uid)}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[#00A676] font-medium mr-2 text-xs">
+                            {doctor.firstName.charAt(0)}{doctor.lastName.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-medium text-gray-900">Dr. {doctor.firstName} {doctor.lastName}</h3>
+                            <p className="text-xs text-gray-500">{doctor.specialty}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 text-center text-gray-500 text-sm">
+                        No doctors found
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h2 className="text-md font-medium text-gray-900 mt-6 mb-3">My Consultations</h2>
+                  
+                  {/* Consultation types - now wider and evenly sized */}
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    {/* Card 1 */}
+                    <div 
+                      className={`${selectedAppointmentType === 'Consultation' ? 'bg-[#00A676]' : 'bg-green-50'} rounded-xl p-2 cursor-pointer flex flex-col items-center justify-center h-24 ${selectedAppointmentType === 'Consultation' ? 'ring-2 ring-[#00A676]' : ''}`}
+                      onClick={() => setSelectedAppointmentType('Consultation')}
+                    >
+                      <div className="flex items-center justify-center">
+                        <img 
+                          src="/img/consultation.svg" 
+                          alt="Consultation" 
+                          className="w-8 h-8" 
+                        />
+                      </div>
+                      <div className="text-center mt-2">
+                        <h3 className={`${selectedAppointmentType === 'Consultation' ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>Consultation</h3>
+                        <p className={`${selectedAppointmentType === 'Consultation' ? 'text-green-200' : 'text-gray-500'} text-xs`}>1h</p>
+                      </div>
+                    </div>
+                    
+                    {/* Card 2 */}
+                    <div 
+                      className={`${selectedAppointmentType === 'Checkup' ? 'bg-[#00A676]' : 'bg-green-50'} rounded-xl p-2 cursor-pointer flex flex-col items-center justify-center h-24 ${selectedAppointmentType === 'Checkup' ? 'ring-2 ring-[#00A676]' : ''}`}
+                      onClick={() => setSelectedAppointmentType('Checkup')}
+                    >
+                      <div className="flex items-center justify-center">
+                        <img 
+                          src="/img/checkup.svg" 
+                          alt="Checkup" 
+                          className="w-8 h-8" 
+                        />
+                      </div>
+                      <div className="text-center mt-2">
+                        <h3 className={`${selectedAppointmentType === 'Checkup' ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>Checkup</h3>
+                        <p className={`${selectedAppointmentType === 'Checkup' ? 'text-green-200' : 'text-gray-500'} text-xs`}>2h</p>
+                      </div>
+                    </div>
+                    
+                    {/* Card 3 */}
+                    <div 
+                      className={`${selectedAppointmentType === 'Specialization' ? 'bg-[#00A676]' : 'bg-green-50'} rounded-xl p-2 cursor-pointer flex flex-col items-center justify-center h-24 ${selectedAppointmentType === 'Specialization' ? 'ring-2 ring-[#00A676]' : ''}`}
+                      onClick={() => setSelectedAppointmentType('Specialization')}
+                    >
+                      <div className="flex items-center justify-center">
+                        <img 
+                          src="/img/specialist.svg" 
+                          alt="Specialization" 
+                          className="w-8 h-8" 
+                        />
+                      </div>
+                      <div className="text-center mt-2">
+                        <h3 className={`${selectedAppointmentType === 'Specialization' ? 'text-white' : 'text-gray-800'} font-medium text-xs`}>Specialist</h3>
+                        <p className={`${selectedAppointmentType === 'Specialization' ? 'text-green-200' : 'text-gray-500'} text-xs`}>3h</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Right column - calendar */}
+                <div className="col-span-9">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-md font-medium text-gray-900">{currentMonth}</h2>
+                    <div className="flex space-x-1">
+                      <button 
+                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+                        onClick={handlePreviousMonth}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <button 
+                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+                        onClick={handleNextMonth}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Calendar header */}
+                    <div className="grid grid-cols-7 text-center border-b border-gray-200">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                        <div key={i} className="py-1 text-xs font-medium text-gray-600">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Calendar days */}
+                    <div className="grid grid-cols-7 text-center">
+                      {calendarDays.map((day, i) => (
+                        <div 
+                          key={i} 
+                          className={`py-2 ${i < calendarDays.length - 7 ? 'border-b border-gray-200' : ''} ${
+                            day ? 'cursor-pointer hover:bg-gray-50' : ''
+                          } ${
+                            day === selectedDay ? 'bg-[#00A676]' : day ? 'bg-white' : 'bg-gray-50'
+                          }`}
+                          onClick={() => day && handleDateSelection(day)}
+                        >
+                          {day && (
+                            <span className={`text-xs ${
+                              day === selectedDay ? 'text-white font-medium' : 'text-gray-900'
+                            }`}>
+                              {day}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <button 
+                      onClick={handleBookAppointment}
+                      className="w-full bg-[#00A676] text-white text-sm font-medium py-2 px-3 rounded-md hover:bg-[#008d64]"
+                      disabled={!currentUser || !selectedDoctorId || !selectedDate}
+                    >
+                      Book Appointment
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
